@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
+#include <SD.h>
 
 // --- NTP & Ethernet config ---
 byte mac[] = { 0xA8, 0x61, 0x0A, 0xAE, 0x30, 0x21 };
@@ -41,6 +42,11 @@ bool blinkState = false;
 
 float tA = NAN, tB = NAN, tC = NAN, tD = NAN;
 float hA = NAN, hB = NAN, hC = NAN, hD = NAN;
+
+// --- SD card ---
+const int chipSelect = 4;  // change if needed
+const unsigned long csvWriteInterval = 30000;  // Write CSV every 30 seconds
+unsigned long lastCsvWrite = 0;
 
 // --- NTP helper functions ---
 void sendNTPpacket(IPAddress& address) {
@@ -195,6 +201,51 @@ void requestNtpTime() {
   Serial.println("NTP response timeout.");
 }
 
+// --- CSV Helper: format date as mm-dd-yyyy ---
+String getDateString() {
+  int year, month, day, hour, minute, second, weekday;
+  epochToDateTime(currentEpoch, year, month, day, hour, minute, second, weekday);
+  char buffer[11];
+  snprintf(buffer, sizeof(buffer), "%02d-%02d-%04d", month + 1, day, year);
+  return String(buffer);
+}
+
+// --- Write CSV header if file doesn't exist ---
+void createCsvHeaderIfNeeded() {
+  if (!SD.exists("temp.csv")) {
+    File dataFile = SD.open("temp.csv", FILE_WRITE);
+    if (dataFile) {
+      dataFile.println("Date,Sensor A,Sensor B,Sensor C,Sensor D");
+      dataFile.close();
+      Serial.println("CSV header created.");
+    } else {
+      Serial.println("Failed to create CSV header.");
+    }
+  }
+}
+
+// --- Append sensor data line to CSV ---
+void appendCsvData() {
+  File dataFile = SD.open("temp.csv", FILE_WRITE);
+  if (dataFile) {
+    String line = getDateString() + ",";
+    line += isnan(tA) ? "ERR" : String(tA, 1);
+    line += ",";
+    line += isnan(tB) ? "ERR" : String(tB, 1);
+    line += ",";
+    line += isnan(tC) ? "ERR" : String(tC, 1);
+    line += ",";
+    line += isnan(tD) ? "ERR" : String(tD, 1);
+
+    dataFile.println(line);
+    dataFile.close();
+    Serial.print("Temperature data written to CSV: ");
+    Serial.println(line);
+  } else {
+    Serial.println("Failed to open temp.csv for writing.");
+  }
+}
+
 // ----- Setup and Loop -----
 
 void setup() {
@@ -236,7 +287,7 @@ void setup() {
     for (int col = 0; col < 20; col++) {
       lcd.setCursor(col, row);
       lcd.write(255);
-      delay(125); // 125ms * 80 = 10s total
+      delay(125);
     }
   }
 
@@ -274,6 +325,14 @@ void setup() {
 
   requestNtpTime(); // initial NTP sync
   lastNtpCheck = millis();
+
+  // --- SD card initialization ---
+  if (!SD.begin(chipSelect)) {
+    Serial.println("SD card initialization failed!");
+  } else {
+    Serial.println("SD card initialized.");
+    createCsvHeaderIfNeeded();
+  }
 
   lastDisplaySwitch = millis();
 }
@@ -396,6 +455,7 @@ void loop() {
     digitalWrite(GREEN_LED_PIN, HIGH);
   }
 
+  // --- LCD DISPLAY (Unchanged as per your request) ---
   if (now - lastDisplaySwitch >= 10000) {
     displayMode = !displayMode;
     lcd.clear();
@@ -445,5 +505,11 @@ void loop() {
   if (now - lastNtpCheck > ntpInterval) {
     requestNtpTime();
     lastNtpCheck = now;
+  }
+
+  // --- CSV write every 30 seconds ---
+  if (now - lastCsvWrite >= csvWriteInterval) {
+    appendCsvData();
+    lastCsvWrite = now;
   }
 }
