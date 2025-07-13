@@ -1,0 +1,9 @@
+*.hex
+*.elf
+*.bin
+*.log
+*.pyc
+*.swp
+*.csv
+.DS_Store
+build/
