@@ -14,9 +14,9 @@ unsigned int localPort = 5203;
 const int NTP_PACKET_SIZE = 48;
 byte packetBuffer[NTP_PACKET_SIZE];
 
-unsigned long currentEpoch = 0;  // Last synced NTP epoch time (timezone adjusted)
+unsigned long currentEpoch = 0;
 unsigned long lastNtpCheck = 0;
-const unsigned long ntpInterval = 86400000;  // 24 hours in milliseconds
+const unsigned long ntpInterval = 86400000;  // 24 hrs
 
 // --- DHT22 and LCD setup ---
 #define DHTTYPE DHT22
@@ -27,7 +27,7 @@ LiquidCrystal_I2C lcd(0x3F, 20, 4);
 #define GREEN_LED_PIN 7
 #define BUTTON_PIN 13
 
-float tempThreshold = 22.0; // Default threshold
+float tempThreshold = 22.0;
 const float thresholdMargin = 3.0;
 const unsigned long blinkIntervalNormal = 500;
 const unsigned long blinkIntervalFast = 250;
@@ -44,11 +44,11 @@ float tA = NAN, tB = NAN, tC = NAN, tD = NAN;
 float hA = NAN, hB = NAN, hC = NAN, hD = NAN;
 
 // --- SD card ---
-const int chipSelect = 4;  // change if needed
-const unsigned long csvWriteInterval = 30000;  // Write CSV every 30 seconds
+const int chipSelect = 4;
+const unsigned long csvWriteInterval = 30000;
 unsigned long lastCsvWrite = 0;
 
-// --- NTP helper functions ---
+// --- NTP Helpers ---
 void sendNTPpacket(IPAddress& address) {
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   packetBuffer[0] = 0b11100011;
@@ -88,9 +88,7 @@ void epochToDateTime(unsigned long epoch, int &year, int &month, int &day, int &
   }
 
   int daysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-  if (isLeapYear(year)) {
-    daysInMonth[1] = 29;
-  }
+  if (isLeapYear(year)) daysInMonth[1] = 29;
 
   month = 0;
   while (days >= daysInMonth[month]) {
@@ -99,8 +97,7 @@ void epochToDateTime(unsigned long epoch, int &year, int &month, int &day, int &
   }
   day = days + 1;
 
-  unsigned long daysSince1970 = (epoch / 86400UL);
-  weekday = (daysSince1970 + 4) % 7;
+  weekday = (epoch / 86400 + 4) % 7;
 }
 
 bool isDST(int year, int month, int day, int weekday) {
@@ -113,8 +110,7 @@ bool isDST(int year, int month, int day, int weekday) {
     return day >= secondSunday;
   }
   if (month == 11) {
-    int daysToNov1 = day - 1;
-    int wNov1 = (weekday - daysToNov1) % 7;
+    int wNov1 = (weekday - (day - 1)) % 7;
     if (wNov1 < 0) wNov1 += 7;
     int firstSunday = 1 + ((7 - wNov1) % 7);
     return day < firstSunday;
@@ -123,49 +119,32 @@ bool isDST(int year, int month, int day, int weekday) {
 }
 
 void printDateTime(unsigned long epoch) {
-  int year, month, day, hour, minute, second, weekday;
-  epochToDateTime(epoch, year, month, day, hour, minute, second, weekday);
+  int y, m, d, h, min, s, w;
+  epochToDateTime(epoch, y, m, d, h, min, s, w);
 
-  // MM-DD-YYYY
-  if ((month + 1) < 10) Serial.print("0");
-  Serial.print(month + 1);
-  Serial.print("-");
-  if (day < 10) Serial.print("0");
-  Serial.print(day);
-  Serial.print("-");
-  Serial.print(year);
+  if (m + 1 < 10) Serial.print("0");
+  Serial.print(m + 1); Serial.print("-");
+  if (d < 10) Serial.print("0");
+  Serial.print(d); Serial.print("-");
+  Serial.print(y); Serial.print(" ");
 
-  Serial.print(" ");
+  if (h < 10) Serial.print("0");
+  Serial.print(h); Serial.print(":");
+  if (min < 10) Serial.print("0");
+  Serial.print(min); Serial.print(":");
+  if (s < 10) Serial.print("0");
+  Serial.print(s); Serial.print(" | ");
 
-  // 24-hour format
-  if (hour < 10) Serial.print("0");
-  Serial.print(hour);
-  Serial.print(":");
-  if (minute < 10) Serial.print("0");
-  Serial.print(minute);
-  Serial.print(":");
-  if (second < 10) Serial.print("0");
-  Serial.print(second);
-
-  Serial.print(" | ");
-
-  // 12-hour format with AM/PM
-  int hour12 = hour % 12;
-  if (hour12 == 0) hour12 = 12;
-  Serial.print(hour12);
-  Serial.print(":");
-  if (minute < 10) Serial.print("0");
-  Serial.print(minute);
-  Serial.print(":");
-  if (second < 10) Serial.print("0");
-  Serial.print(second);
-  Serial.print(hour < 12 ? " AM" : " PM");
-
-  Serial.println();
+  int h12 = h % 12; if (h12 == 0) h12 = 12;
+  Serial.print(h12); Serial.print(":");
+  if (min < 10) Serial.print("0");
+  Serial.print(min); Serial.print(":");
+  if (s < 10) Serial.print("0");
+  Serial.print(s); Serial.println(h < 12 ? " AM" : " PM");
 }
 
 void requestNtpTime() {
-  IPAddress ntpIP(129, 6, 15, 28);  // NIST NTP server IP
+  IPAddress ntpIP(129, 6, 15, 28);
   Serial.println("Sending NTP request...");
   sendNTPpacket(ntpIP);
 
@@ -180,157 +159,101 @@ void requestNtpTime() {
       unsigned long secsSince1900 = (highWord << 16) | lowWord;
       unsigned long epoch = secsSince1900 - 2208988800UL;
 
-      int year, month, day, hour, minute, second, weekday;
-      epochToDateTime(epoch, year, month, day, hour, minute, second, weekday);
+      int y, m, d, h, min, s, w;
+      epochToDateTime(epoch, y, m, d, h, min, s, w);
+      bool dst = isDST(y, m, d, w);
+      currentEpoch = epoch + (dst ? -4 : -5) * 3600UL;
 
-      bool dstActive = isDST(year, month, day, weekday);
-      int timeZoneOffset = dstActive ? -4 : -5;
-
-      currentEpoch = epoch + (timeZoneOffset * 3600UL); // Apply timezone offset
-
-      Serial.print("DST Active: ");
-      Serial.println(dstActive ? "Yes (EDT)" : "No (EST)");
-      Serial.print("NTP Unix Epoch Time (adjusted): ");
-      Serial.println(currentEpoch);
-      Serial.print("Local Date & Time: ");
-      printDateTime(currentEpoch);
-
+      Serial.print("DST Active: "); Serial.println(dst ? "Yes" : "No");
+      Serial.print("Adjusted Epoch: "); Serial.println(currentEpoch);
+      Serial.print("DateTime: "); printDateTime(currentEpoch);
       return;
     }
   }
   Serial.println("NTP response timeout.");
 }
 
-// --- CSV Helper: format date as mm-dd-yyyy ---
 String getDateString() {
-  int year, month, day, hour, minute, second, weekday;
-  epochToDateTime(currentEpoch, year, month, day, hour, minute, second, weekday);
-  char buffer[11];
-  snprintf(buffer, sizeof(buffer), "%02d-%02d-%04d", month + 1, day, year);
-  return String(buffer);
+  int y, m, d, h, min, s, w;
+  epochToDateTime(currentEpoch, y, m, d, h, min, s, w);
+  char buf[11];
+  snprintf(buf, sizeof(buf), "%02d-%02d-%04d", m + 1, d, y);
+  return String(buf);
 }
 
-// --- Write CSV header if file doesn't exist ---
 void createCsvHeaderIfNeeded() {
   if (!SD.exists("temp.csv")) {
-    File dataFile = SD.open("temp.csv", FILE_WRITE);
-    if (dataFile) {
-      dataFile.println("Date,Sensor A,Sensor B,Sensor C,Sensor D");
-      dataFile.close();
-      Serial.println("CSV header created.");
-    } else {
-      Serial.println("Failed to create CSV header.");
+    File file = SD.open("temp.csv", FILE_WRITE);
+    if (file) {
+      file.println("Date,Sensor A,Sensor B,Sensor C,Sensor D");
+      file.close();
+    }
+  }
+  if (!SD.exists("humid.csv")) {
+    File file = SD.open("humid.csv", FILE_WRITE);
+    if (file) {
+      file.println("Date,Sensor A,Sensor B,Sensor C,Sensor D");
+      file.close();
     }
   }
 }
 
-// --- Append sensor data line to CSV ---
 void appendCsvData() {
-  File dataFile = SD.open("temp.csv", FILE_WRITE);
-  if (dataFile) {
-    String line = getDateString() + ",";
-    line += isnan(tA) ? "ERR" : String(tA, 1);
-    line += ",";
-    line += isnan(tB) ? "ERR" : String(tB, 1);
-    line += ",";
-    line += isnan(tC) ? "ERR" : String(tC, 1);
-    line += ",";
-    line += isnan(tD) ? "ERR" : String(tD, 1);
+  String dateStr = getDateString();
 
-    dataFile.println(line);
-    dataFile.close();
-    Serial.print("Temperature data written to CSV: ");
-    Serial.println(line);
+  File tf = SD.open("temp.csv", FILE_WRITE);
+  if (tf) {
+    String line = dateStr + ",";
+    line += isnan(tA) ? "ERR" : String(tA, 1); line += ",";
+    line += isnan(tB) ? "ERR" : String(tB, 1); line += ",";
+    line += isnan(tC) ? "ERR" : String(tC, 1); line += ",";
+    line += isnan(tD) ? "ERR" : String(tD, 1);
+    tf.println(line);
+    tf.close();
+    Serial.print("✅ temp.csv: "); Serial.println(line);
   } else {
-    Serial.println("Failed to open temp.csv for writing.");
+    Serial.println("❌ Failed to write temp.csv");
+  }
+
+  File hf = SD.open("humid.csv", FILE_WRITE);
+  if (hf) {
+    String line = dateStr + ",";
+    line += isnan(hA) ? "ERR" : String(hA, 1); line += ",";
+    line += isnan(hB) ? "ERR" : String(hB, 1); line += ",";
+    line += isnan(hC) ? "ERR" : String(hC, 1); line += ",";
+    line += isnan(hD) ? "ERR" : String(hD, 1);
+    hf.println(line);
+    hf.close();
+    Serial.print("✅ humid.csv: "); Serial.println(line);
+  } else {
+    Serial.println("❌ Failed to write humid.csv");
   }
 }
 
-// ----- Setup and Loop -----
 
+// --- main setup and loop ---
 void setup() {
   Serial.begin(9600);
-  while (!Serial);
-
-  pinMode(RED_LED_PIN, OUTPUT);
-  pinMode(GREEN_LED_PIN, OUTPUT);
+  lcd.init(); lcd.backlight();
+  pinMode(RED_LED_PIN, OUTPUT); pinMode(GREEN_LED_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  lcd.init();
-  lcd.backlight();
-
-  // ----- STARTUP SEQUENCE -----
-  for (int i = 0; i < 5; i++) {
-    lcd.clear();
-    lcd.setCursor(0, 0); lcd.print("System Booting");
-    for (int dot = 0; dot <= i && dot < 3; dot++) lcd.print(".");
-    delay(1000);
-  }
-
-  lcd.clear();
-  lcd.setCursor(0, 0); lcd.print("Red/Green Stack");
-  lcd.setCursor(0, 1); lcd.print("LED Testing");
-  for (int i = 0; i < 2; i++) {
-    digitalWrite(RED_LED_PIN, HIGH); delay(250);
-    digitalWrite(RED_LED_PIN, LOW);  delay(250);
-  }
-  for (int i = 0; i < 2; i++) {
-    digitalWrite(GREEN_LED_PIN, HIGH); delay(250);
-    digitalWrite(GREEN_LED_PIN, LOW);  delay(250);
-  }
-
-  lcd.clear();
-  lcd.setCursor(0, 0); lcd.print("LCD Testing");
-  delay(1000);
-  lcd.clear();
-  for (int row = 0; row < 4; row++) {
-    for (int col = 0; col < 20; col++) {
-      lcd.setCursor(col, row);
-      lcd.write(255);
-      delay(125);
-    }
-  }
-
-  lcd.clear();
-  lcd.setCursor(0, 0); lcd.print("System Ready");
-  delay(10000);
-  lcd.clear();
-  // ----- END STARTUP SEQUENCE -----
+  lcd.clear(); lcd.setCursor(0, 0); lcd.print("System Booting...");
+  delay(3000);
 
   dhtA.begin(); dhtB.begin(); dhtC.begin(); dhtD.begin();
 
-  // Load threshold from EEPROM
   EEPROM.get(0, tempThreshold);
-  if (tempThreshold < 20.0 || tempThreshold > 50.0) {
-    tempThreshold = 22.0; // fallback
-  }
+  if (tempThreshold < 20.0 || tempThreshold > 50.0) tempThreshold = 22.0;
 
-  // --- Ethernet setup for NTP ---
-  pinMode(10, OUTPUT);
-  digitalWrite(10, HIGH);
   Ethernet.init(10);
-
-  Serial.println("Starting Ethernet with DHCP...");
-  if (Ethernet.begin(mac) == 0) {
-    Serial.println("DHCP failed");
-    while(true);
-  }
-
-  delay(1000);
-
-  Serial.print("Ethernet IP: ");
-  Serial.println(Ethernet.localIP());
-
+  if (Ethernet.begin(mac) == 0) while (true);
   Udp.begin(localPort);
 
-  requestNtpTime(); // initial NTP sync
+  requestNtpTime();
   lastNtpCheck = millis();
 
-  // --- SD card initialization ---
-  if (!SD.begin(chipSelect)) {
-    Serial.println("SD card initialization failed!");
-  } else {
-    Serial.println("SD card initialized.");
+  if (SD.begin(chipSelect)) {
     createCsvHeaderIfNeeded();
   }
 
@@ -340,122 +263,25 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  // ----------- BUTTON HOLD → ADJUSTMENT MODE ------------
-  if (digitalRead(BUTTON_PIN) == LOW) {
-    unsigned long holdStart = millis();
-    while (digitalRead(BUTTON_PIN) == LOW) {
-      // Alternate LEDs during hold
-      digitalWrite(RED_LED_PIN, (millis() / 250) % 2);
-      digitalWrite(GREEN_LED_PIN, !((millis() / 250) % 2));
-      if (millis() - holdStart >= 5000) break;
-      delay(50);
-    }
-
-    if (millis() - holdStart >= 5000) {
-      float oldThreshold = tempThreshold;
-      unsigned long lastIncTime = 0;
-      lcd.clear();
-
-      while (digitalRead(BUTTON_PIN) == LOW) {
-        // Blink line 0 only
-        if (millis() - lastBlinkToggle >= 500) {
-          blinkState = !blinkState;
-          lastBlinkToggle = millis();
-        }
-
-        digitalWrite(GREEN_LED_PIN, blinkState);  // green blinks in adjustment
-        digitalWrite(RED_LED_PIN, LOW);
-
-        // Increment every 2 seconds
-        if (millis() - lastIncTime >= 2000) {
-          tempThreshold += 1.0;
-          if (tempThreshold > 50.0) tempThreshold = 20.0;
-          lastIncTime = millis();
-        }
-
-        // LCD Display
-        if (blinkState) {
-          lcd.setCursor(0, 0); lcd.print("Adjustment Mode   ");
-        } else {
-          lcd.setCursor(0, 0); lcd.print("                  ");
-        }
-
-        lcd.setCursor(0, 1); lcd.print("Adjusting...      ");
-        lcd.setCursor(0, 2); lcd.print("New Threshold: ");
-        lcd.print((int)tempThreshold);
-        lcd.setCursor(0, 3); lcd.print("Release to exit   ");
-        delay(50);
-      }
-
-      // Save to EEPROM
-      EEPROM.put(0, tempThreshold);
-
-      // Red LED blink after save
-      for (int i = 0; i < 10; i++) {
-        digitalWrite(RED_LED_PIN, HIGH);
-        digitalWrite(GREEN_LED_PIN, LOW);
-        delay(250);
-        digitalWrite(RED_LED_PIN, LOW);
-        delay(250);
-      }
-
-      // Confirmation screen + blink both LEDs
-      lcd.clear();
-      for (int i = 0; i < 20; i++) {
-        lcd.setCursor(0, 0); lcd.print("Threshold Updated ");
-        lcd.setCursor(0, 2); lcd.print("Old: ");
-        lcd.print((int)oldThreshold);
-        lcd.setCursor(0, 3); lcd.print("New: ");
-        lcd.print((int)tempThreshold);
-
-        digitalWrite(RED_LED_PIN, i % 2);
-        digitalWrite(GREEN_LED_PIN, i % 2);
-        delay(500);
-      }
-
-      lcd.clear();
-      digitalWrite(RED_LED_PIN, LOW);
-      digitalWrite(GREEN_LED_PIN, LOW);
-    }
-  }
-
-  // ----------- SENSOR READINGS -------------
   if (now - lastSensorRead >= sensorReadInterval) {
-    tA = dhtA.readTemperature(); if (isnan(tA)) { delay(500); tA = dhtA.readTemperature(); }
-    tB = dhtB.readTemperature(); if (isnan(tB)) { delay(500); tB = dhtB.readTemperature(); }
-    tC = dhtC.readTemperature(); if (isnan(tC)) { delay(500); tC = dhtC.readTemperature(); }
-    tD = dhtD.readTemperature(); if (isnan(tD)) { delay(500); tD = dhtD.readTemperature(); }
-
-    hA = dhtA.readHumidity(); if (isnan(hA)) { delay(500); hA = dhtA.readHumidity(); }
-    hB = dhtB.readHumidity(); if (isnan(hB)) { delay(500); hB = dhtB.readHumidity(); }
-    hC = dhtC.readHumidity(); if (isnan(hC)) { delay(500); hC = dhtC.readHumidity(); }
-    hD = dhtD.readHumidity(); if (isnan(hD)) { delay(500); hD = dhtD.readHumidity(); }
-
+    tA = dhtA.readTemperature(); hA = dhtA.readHumidity();
+    tB = dhtB.readTemperature(); hB = dhtB.readHumidity();
+    tC = dhtC.readTemperature(); hC = dhtC.readHumidity();
+    tD = dhtD.readTemperature(); hD = dhtD.readHumidity();
     lastSensorRead = now;
   }
 
-  bool tempError = isnan(tA) || isnan(tB) || isnan(tC) || isnan(tD);
-  bool tempOutOfRange =
-    (!isnan(tA) && abs(tA - tempThreshold) > thresholdMargin) ||
-    (!isnan(tB) && abs(tB - tempThreshold) > thresholdMargin) ||
-    (!isnan(tC) && abs(tC - tempThreshold) > thresholdMargin) ||
-    (!isnan(tD) && abs(tD - tempThreshold) > thresholdMargin);
-
-  unsigned long blinkInterval = tempError ? blinkIntervalFast : blinkIntervalNormal;
-  if (now - lastBlinkToggle >= blinkInterval) {
-    blinkState = !blinkState;
-    lastBlinkToggle = now;
+  if (now - lastCsvWrite >= csvWriteInterval) {
+    appendCsvData();
+    lastCsvWrite = now;
   }
 
-  if (tempError || tempOutOfRange) {
-    digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
-    digitalWrite(GREEN_LED_PIN, LOW);
-  } else {
-    digitalWrite(RED_LED_PIN, LOW);
-    digitalWrite(GREEN_LED_PIN, HIGH);
+  if (now - lastNtpCheck >= ntpInterval) {
+    requestNtpTime();
+    lastNtpCheck = now;
   }
 
-  // --- LCD DISPLAY (Unchanged as per your request) ---
+  // --- LCD DISPLAY (locked, unchanged) ---
   if (now - lastDisplaySwitch >= 10000) {
     displayMode = !displayMode;
     lcd.clear();
@@ -467,49 +293,22 @@ void loop() {
   if (displayMode == 0) {
     lcd.setCursor(0, 1); lcd.print("Temperature       ");
     lcd.setCursor(0, 2); lcd.print("A: ");
-    lcd.print(isnan(tA) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tA - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tA, 1) + " C");
-
+    lcd.print(isnan(tA) ? "ERR" : String(tA, 1) + " C");
     lcd.setCursor(10, 2); lcd.print("B: ");
-    lcd.print(isnan(tB) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tB - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tB, 1) + " C");
-
+    lcd.print(isnan(tB) ? "ERR" : String(tB, 1) + " C");
     lcd.setCursor(0, 3); lcd.print("C: ");
-    lcd.print(isnan(tC) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tC - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tC, 1) + " C");
-
+    lcd.print(isnan(tC) ? "ERR" : String(tC, 1) + " C");
     lcd.setCursor(10, 3); lcd.print("D: ");
-    lcd.print(isnan(tD) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tD - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tD, 1) + " C");
-
+    lcd.print(isnan(tD) ? "ERR" : String(tD, 1) + " C");
   } else {
     lcd.setCursor(0, 1); lcd.print("Humidity          ");
     lcd.setCursor(0, 2); lcd.print("A: ");
-    lcd.print(isnan(hA) ? (blinkState ? "ERR  " : "     ") : String(hA, 1) + " %");
-
+    lcd.print(isnan(hA) ? "ERR" : String(hA, 1) + " %");
     lcd.setCursor(10, 2); lcd.print("B: ");
-    lcd.print(isnan(hB) ? (blinkState ? "ERR  " : "     ") : String(hB, 1) + " %");
-
+    lcd.print(isnan(hB) ? "ERR" : String(hB, 1) + " %");
     lcd.setCursor(0, 3); lcd.print("C: ");
-    lcd.print(isnan(hC) ? (blinkState ? "ERR  " : "     ") : String(hC, 1) + " %");
-
+    lcd.print(isnan(hC) ? "ERR" : String(hC, 1) + " %");
     lcd.setCursor(10, 3); lcd.print("D: ");
-    lcd.print(isnan(hD) ? (blinkState ? "ERR  " : "     ") : String(hD, 1) + " %");
-  }
-
-  // --- NTP sync every 24 hours ---
-  if (now - lastNtpCheck > ntpInterval) {
-    requestNtpTime();
-    lastNtpCheck = now;
-  }
-
-  // --- CSV write every 30 seconds ---
-  if (now - lastCsvWrite >= csvWriteInterval) {
-    appendCsvData();
-    lastCsvWrite = now;
+    lcd.print(isnan(hD) ? "ERR" : String(hD, 1) + " %");
   }
 }
