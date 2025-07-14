@@ -45,7 +45,7 @@ float hA = NAN, hB = NAN, hC = NAN, hD = NAN;
 
 // --- SD card ---
 const int chipSelect = 4;
-const unsigned long csvWriteInterval = 30000;
+const unsigned long csvWriteInterval = 300000;
 unsigned long lastCsvWrite = 0;
 
 void sendNTPpacket(IPAddress& address) {
