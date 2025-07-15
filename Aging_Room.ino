@@ -45,7 +45,7 @@ float hA = NAN, hB = NAN, hC = NAN, hD = NAN;
 
 // --- SD card ---
 const int chipSelect = 4;
-const unsigned long csvWriteInterval = 300000;
+const unsigned long csvWriteInterval = 300000;  //how often the CSV is upated in milliseconds
 unsigned long lastCsvWrite = 0;
 
 void sendNTPpacket(IPAddress& address) {
@@ -132,8 +132,15 @@ void requestNtpTime() {
       Udp.read(packetBuffer, NTP_PACKET_SIZE);
       unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
       unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
-      unsigned long secsSince1900 = (highWord << 16) | lowWord;
-      unsigned long epoch = secsSince1900 - 2208988800UL;
+      unsigned long epoch = (highWord << 16) | lowWord;
+
+      unsigned long deviceEpoch = currentEpoch; // existing device time before update
+      long offset = (long)epoch - (long)deviceEpoch;
+
+      Serial.print("NTP Offset (seconds): ");
+      Serial.println(offset);
+
+      epoch -= 2208988800UL;
 
       int year, month, day, hour, minute, second, weekday;
       epochToDateTime(epoch, year, month, day, hour, minute, second, weekday);
@@ -155,6 +162,7 @@ void requestNtpTime() {
   }
   Serial.println("NTP response timeout.");
 }
+
 
 String getDateString() {
   int year, month, day, hour, minute, second, weekday;
@@ -197,10 +205,10 @@ void appendCsvData() {
   File tf = SD.open("temp.csv", FILE_WRITE);
   if (tf) {
     tf.print(dateStr + " " + timeStr + ",");
-    tf.print(isnan(tA) ? "ERR" : String(tA, 1)); tf.print(",");
-    tf.print(isnan(tB) ? "ERR" : String(tB, 1)); tf.print(",");
-    tf.print(isnan(tC) ? "ERR" : String(tC, 1)); tf.print(",");
-    tf.println(isnan(tD) ? "ERR" : String(tD, 1));
+    tf.print(isnan(tA) ? "ERR" : String(tA, 1) + " °C"); tf.print(",");
+    tf.print(isnan(tB) ? "ERR" : String(tB, 1) + " °C"); tf.print(",");
+    tf.print(isnan(tC) ? "ERR" : String(tC, 1) + " °C"); tf.print(",");
+    tf.println(isnan(tD) ? "ERR" : String(tD, 1) + " °C");
     tf.close();
 
     Serial.print("Temperature data written to temp.csv: ");
@@ -208,13 +216,13 @@ void appendCsvData() {
     Serial.print(" ");
     Serial.print(timeStr);
     Serial.print(", ");
-    Serial.print(isnan(tA) ? "ERR" : String(tA, 1));
+    Serial.print(isnan(tA) ? "ERR" : String(tA, 1) + " °C");
     Serial.print(", ");
-    Serial.print(isnan(tB) ? "ERR" : String(tB, 1));
+    Serial.print(isnan(tB) ? "ERR" : String(tB, 1) + " °C");
     Serial.print(", ");
-    Serial.print(isnan(tC) ? "ERR" : String(tC, 1));
+    Serial.print(isnan(tC) ? "ERR" : String(tC, 1) + " °C");
     Serial.print(", ");
-    Serial.println(isnan(tD) ? "ERR" : String(tD, 1));
+    Serial.println(isnan(tD) ? "ERR" : String(tD, 1) + " °C");
   } else {
     Serial.println("Failed to open temp.csv for writing.");
   }
@@ -222,10 +230,10 @@ void appendCsvData() {
   File hf = SD.open("humid.csv", FILE_WRITE);
   if (hf) {
     hf.print(dateStr + " " + timeStr + ",");
-    hf.print(isnan(hA) ? "ERR" : String(hA, 1)); hf.print(",");
-    hf.print(isnan(hB) ? "ERR" : String(hB, 1)); hf.print(",");
-    hf.print(isnan(hC) ? "ERR" : String(hC, 1)); hf.print(",");
-    hf.println(isnan(hD) ? "ERR" : String(hD, 1));
+    hf.print(isnan(hA) ? "ERR" : String(hA, 1) + " %"); hf.print(",");
+    hf.print(isnan(hB) ? "ERR" : String(hB, 1) + " %"); hf.print(",");
+    hf.print(isnan(hC) ? "ERR" : String(hC, 1) + " %"); hf.print(",");
+    hf.println(isnan(hD) ? "ERR" : String(hD, 1) + " %");
     hf.close();
 
     Serial.print("Humidity data written to humid.csv: ");
@@ -233,13 +241,13 @@ void appendCsvData() {
     Serial.print(" ");
     Serial.print(timeStr);
     Serial.print(", ");
-    Serial.print(isnan(hA) ? "ERR" : String(hA, 1));
+    Serial.print(isnan(hA) ? "ERR" : String(hA, 1) + " %");
     Serial.print(", ");
-    Serial.print(isnan(hB) ? "ERR" : String(hB, 1));
+    Serial.print(isnan(hB) ? "ERR" : String(hB, 1) + " %");
     Serial.print(", ");
-    Serial.print(isnan(hC) ? "ERR" : String(hC, 1));
+    Serial.print(isnan(hC) ? "ERR" : String(hC, 1) + " %");
     Serial.print(", ");
-    Serial.println(isnan(hD) ? "ERR" : String(hD, 1));
+    Serial.println(isnan(hD) ? "ERR" : String(hD, 1) + " %");
   } else {
     Serial.println("Failed to open humid.csv for writing.");
   }
