@@ -164,6 +164,15 @@ String getDateString() {
   return String(buffer);
 }
 
+// *** New function added to get HH:MM:SS time string ***
+String getTimeString() {
+  int year, month, day, hour, minute, second, weekday;
+  epochToDateTime(currentEpoch, year, month, day, hour, minute, second, weekday);
+  char buffer[9];
+  snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hour, minute, second);
+  return String(buffer);
+}
+
 void createCsvHeaderIfNeeded() {
   if (!SD.exists("temp.csv")) {
     File f = SD.open("temp.csv", FILE_WRITE);
@@ -181,13 +190,13 @@ void createCsvHeaderIfNeeded() {
   }
 }
 
-
 void appendCsvData() {
   String dateStr = getDateString();
+  String timeStr = getTimeString();
 
   File tf = SD.open("temp.csv", FILE_WRITE);
   if (tf) {
-    tf.print(dateStr + ",");
+    tf.print(dateStr + " " + timeStr + ",");
     tf.print(isnan(tA) ? "ERR" : String(tA, 1)); tf.print(",");
     tf.print(isnan(tB) ? "ERR" : String(tB, 1)); tf.print(",");
     tf.print(isnan(tC) ? "ERR" : String(tC, 1)); tf.print(",");
@@ -196,6 +205,8 @@ void appendCsvData() {
 
     Serial.print("Temperature data written to temp.csv: ");
     Serial.print(dateStr);
+    Serial.print(" ");
+    Serial.print(timeStr);
     Serial.print(", ");
     Serial.print(isnan(tA) ? "ERR" : String(tA, 1));
     Serial.print(", ");
@@ -210,7 +221,7 @@ void appendCsvData() {
 
   File hf = SD.open("humid.csv", FILE_WRITE);
   if (hf) {
-    hf.print(dateStr + ",");
+    hf.print(dateStr + " " + timeStr + ",");
     hf.print(isnan(hA) ? "ERR" : String(hA, 1)); hf.print(",");
     hf.print(isnan(hB) ? "ERR" : String(hB, 1)); hf.print(",");
     hf.print(isnan(hC) ? "ERR" : String(hC, 1)); hf.print(",");
@@ -219,6 +230,8 @@ void appendCsvData() {
 
     Serial.print("Humidity data written to humid.csv: ");
     Serial.print(dateStr);
+    Serial.print(" ");
+    Serial.print(timeStr);
     Serial.print(", ");
     Serial.print(isnan(hA) ? "ERR" : String(hA, 1));
     Serial.print(", ");
@@ -427,13 +440,18 @@ void loop() {
     digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
     digitalWrite(GREEN_LED_PIN, LOW);
   } else if (tempOutOfRange) {
-    digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
+    digitalWrite(RED_LED_PIN, HIGH);
     digitalWrite(GREEN_LED_PIN, LOW);
   } else {
-    digitalWrite(RED_LED_PIN, LOW);
     digitalWrite(GREEN_LED_PIN, HIGH);
+    digitalWrite(RED_LED_PIN, LOW);
   }
 
+  // --- LCD Display Switch ---
+  if (now - lastDisplaySwitch >= 5000) {
+    displayMode = (displayMode + 1) % 2;
+    lastDisplaySwitch = now;
+  }
   // --- LCD Display ---
   if (now - lastDisplaySwitch >= 10000) {
     displayMode = !displayMode;
@@ -473,15 +491,16 @@ void loop() {
     lcd.print(isnan(hD) ? (blinkState ? "ERR  " : "     ") : String(hD, 1) + " %");
   }
 
-  // --- NTP resync every 24 hours ---
-  if (now - lastNtpCheck > ntpInterval) {
+
+  // --- NTP Time Refresh ---
+  if (millis() - lastNtpCheck >= ntpInterval) {
     requestNtpTime();
-    lastNtpCheck = now;
+    lastNtpCheck = millis();
   }
 
-  // --- CSV write every 30s ---
-  if (now - lastCsvWrite >= csvWriteInterval) {
+  // --- CSV Logging every 5 minutes ---
+  if (millis() - lastCsvWrite >= csvWriteInterval) {
     appendCsvData();
-    lastCsvWrite = now;
+    lastCsvWrite = millis();
   }
 }
