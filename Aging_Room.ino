@@ -386,6 +386,13 @@ void serveRootPage(EthernetClient &client) {
 
 void loop() {
   unsigned long now = millis();
+  // --- Update internal clock every second ---
+static unsigned long lastEpochUpdate = 0;
+if (now - lastEpochUpdate >= 1000) {
+  currentEpoch++;
+  lastEpochUpdate = now;
+}
+
 
   // --- Threshold Menu Button Hold ---
   if (digitalRead(BUTTON_PIN) == LOW) {
