@@ -378,6 +378,8 @@ void serveRootPage(EthernetClient &client) {
   client.println("<ul>");
   client.println("<li><a href=\"/temp.csv\">Download Temperature CSV</a></li>");
   client.println("<li><a href=\"/humid.csv\">Download Humidity CSV</a></li>");
+  client.println("<li><a href=\"/delete_temp\">Delete Temperature CSV</a></li>");
+  client.println("<li><a href=\"/delete_humid\">Delete Humidity CSV</a></li>");
   client.println("</ul>");
   client.println("</body></html>");
 }
@@ -551,7 +553,7 @@ if (tempError) {
     lastCsvWrite = millis();
   }
 
-  // --- Web Server Code Injection ---
+    // --- Web Server Code Injection ---
   EthernetClient client = server.available();
   if (client) {
     bool currentLineIsBlank = true;
@@ -568,6 +570,22 @@ if (tempError) {
             break;
           } else if (httpRequest.startsWith("GET /humid.csv")) {
             serveFile(client, "humid.csv", "text/csv");
+            break;
+          } else if (httpRequest.startsWith("GET /delete_temp")) {
+            SD.remove("temp.csv");
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-Type: text/plain");
+            client.println("Connection: close");
+            client.println();
+            client.println("Temperature CSV deleted.");
+            break;
+          } else if (httpRequest.startsWith("GET /delete_humid")) {
+            SD.remove("humid.csv");
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-Type: text/plain");
+            client.println("Connection: close");
+            client.println();
+            client.println("Humidity CSV deleted.");
             break;
           } else if (httpRequest.startsWith("GET /")) {
             serveRootPage(client);
