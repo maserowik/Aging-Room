@@ -48,6 +48,9 @@ const int chipSelect = 4;
 const unsigned long csvWriteInterval = 300000;  //how often the CSV is upated in milliseconds
 unsigned long lastCsvWrite = 0;
 
+// --- Ethernet Server ---
+EthernetServer server(80);
+
 void sendNTPpacket(IPAddress& address) {
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   packetBuffer[0] = 0b11100011;
@@ -163,7 +166,6 @@ void requestNtpTime() {
   Serial.println("NTP response timeout.");
 }
 
-
 String getDateString() {
   int year, month, day, hour, minute, second, weekday;
   epochToDateTime(currentEpoch, year, month, day, hour, minute, second, weekday);
@@ -185,14 +187,14 @@ void createCsvHeaderIfNeeded() {
   if (!SD.exists("temp.csv")) {
     File f = SD.open("temp.csv", FILE_WRITE);
     if (f) {
-      f.println("Date,Sensor A,Sensor B,Sensor C,Sensor D");
+      f.println("Date,Time,Sensor A,Sensor B,Sensor C,Sensor D");
       f.close();
     }
   }
   if (!SD.exists("humid.csv")) {
     File f = SD.open("humid.csv", FILE_WRITE);
     if (f) {
-      f.println("Date,Sensor A,Sensor B,Sensor C,Sensor D");
+      f.println("Date,Time,Sensor A,Sensor B,Sensor C,Sensor D");
       f.close();
     }
   }
@@ -204,11 +206,11 @@ void appendCsvData() {
 
   File tf = SD.open("temp.csv", FILE_WRITE);
   if (tf) {
-    tf.print(dateStr + " " + timeStr + ",");
-    tf.print(isnan(tA) ? "ERR" : String(tA, 1) + " °C"); tf.print(",");
-    tf.print(isnan(tB) ? "ERR" : String(tB, 1) + " °C"); tf.print(",");
-    tf.print(isnan(tC) ? "ERR" : String(tC, 1) + " °C"); tf.print(",");
-    tf.println(isnan(tD) ? "ERR" : String(tD, 1) + " °C");
+    tf.print(dateStr + "," + timeStr + ",");
+    tf.print(isnan(tA) ? "ERR" : String(tA, 1) + " C"); tf.print(",");
+    tf.print(isnan(tB) ? "ERR" : String(tB, 1) + " C"); tf.print(",");
+    tf.print(isnan(tC) ? "ERR" : String(tC, 1) + " C"); tf.print(",");
+    tf.println(isnan(tD) ? "ERR" : String(tD, 1) + " C");
     tf.close();
 
     Serial.print("Temperature data written to temp.csv: ");
@@ -229,7 +231,7 @@ void appendCsvData() {
 
   File hf = SD.open("humid.csv", FILE_WRITE);
   if (hf) {
-    hf.print(dateStr + " " + timeStr + ",");
+    hf.print(dateStr + "," + timeStr + ",");
     hf.print(isnan(hA) ? "ERR" : String(hA, 1) + " %"); hf.print(",");
     hf.print(isnan(hB) ? "ERR" : String(hB, 1) + " %"); hf.print(",");
     hf.print(isnan(hC) ? "ERR" : String(hC, 1) + " %"); hf.print(",");
@@ -336,6 +338,48 @@ void setup() {
   }
 
   lastDisplaySwitch = millis();
+
+  server.begin();  // Start Ethernet server for web requests
+}
+
+void serveFile(EthernetClient &client, const char* filename, const char* contentType) {
+  if (SD.exists(filename)) {
+    File file = SD.open(filename, FILE_READ);
+    client.println("HTTP/1.1 200 OK");
+    client.print("Content-Type: ");
+    client.println(contentType);
+    client.println("Connection: close");
+    client.println();
+
+    while (file.available()) {
+      client.write(file.read());
+    }
+    file.close();
+  } else {
+    client.println("HTTP/1.1 404 Not Found");
+    client.println("Content-Type: text/plain");
+    client.println("Connection: close");
+    client.println();
+    client.println("File not found");
+  }
+}
+
+void serveRootPage(EthernetClient &client) {
+  String lastUpdate = getDateString() + " " + getTimeString();
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/html");
+  client.println("Connection: close");
+  client.println();
+  client.println("<!DOCTYPE html><html><head><title>CSV Download</title></head><body>");
+  client.println("<h1>Seegrid Aging Room Data</h1>");
+  client.print("<p>Last update: ");
+  client.print(lastUpdate);
+  client.println("</p>");
+  client.println("<ul>");
+  client.println("<li><a href=\"/temp.csv\">Download Temperature CSV</a></li>");
+  client.println("<li><a href=\"/humid.csv\">Download Humidity CSV</a></li>");
+  client.println("</ul>");
+  client.println("</body></html>");
 }
 
 void loop() {
@@ -429,37 +473,33 @@ void loop() {
 
     lastSensorRead = now;
   }
+// --- LED Logic ---
+bool tempError = isnan(tA) || isnan(tB) || isnan(tC) || isnan(tD);
+bool tempOutOfRange =
+  (!isnan(tA) && abs(tA - tempThreshold) > thresholdMargin) ||
+  (!isnan(tB) && abs(tB - tempThreshold) > thresholdMargin) ||
+  (!isnan(tC) && abs(tC - tempThreshold) > thresholdMargin) ||
+  (!isnan(tD) && abs(tD - tempThreshold) > thresholdMargin);
 
-  // --- LED Logic ---
-  bool tempError = isnan(tA) || isnan(tB) || isnan(tC) || isnan(tD);
-  bool tempOutOfRange =
-    (!isnan(tA) && abs(tA - tempThreshold) > thresholdMargin) ||
-    (!isnan(tB) && abs(tB - tempThreshold) > thresholdMargin) ||
-    (!isnan(tC) && abs(tC - tempThreshold) > thresholdMargin) ||
-    (!isnan(tD) && abs(tD - tempThreshold) > thresholdMargin);
+unsigned long blinkInterval = tempError ? blinkIntervalFast : blinkIntervalNormal;
+if (now - lastBlinkToggle >= blinkInterval) {
+  blinkState = !blinkState;
+  lastBlinkToggle = now;
+}
 
-  unsigned long blinkInterval = tempError ? blinkIntervalFast : blinkIntervalNormal;
-  if (now - lastBlinkToggle >= blinkInterval) {
-    blinkState = !blinkState;
-    lastBlinkToggle = now;
-  }
+if (tempError) {
+  digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
+  digitalWrite(GREEN_LED_PIN, LOW);
+} else if (tempOutOfRange) {
+  digitalWrite(RED_LED_PIN, HIGH);
+  digitalWrite(GREEN_LED_PIN, LOW);
+} else {
+  digitalWrite(GREEN_LED_PIN, HIGH);
+  digitalWrite(RED_LED_PIN, LOW);
+}
 
-  if (tempError) {
-    digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
-    digitalWrite(GREEN_LED_PIN, LOW);
-  } else if (tempOutOfRange) {
-    digitalWrite(RED_LED_PIN, HIGH);
-    digitalWrite(GREEN_LED_PIN, LOW);
-  } else {
-    digitalWrite(GREEN_LED_PIN, HIGH);
-    digitalWrite(RED_LED_PIN, LOW);
-  }
+ 
 
-  // --- LCD Display Switch ---
-  if (now - lastDisplaySwitch >= 5000) {
-    displayMode = (displayMode + 1) % 2;
-    lastDisplaySwitch = now;
-  }
   // --- LCD Display ---
   if (now - lastDisplaySwitch >= 10000) {
     displayMode = !displayMode;
@@ -499,16 +539,57 @@ void loop() {
     lcd.print(isnan(hD) ? (blinkState ? "ERR  " : "     ") : String(hD, 1) + " %");
   }
 
-
-  // --- NTP Time Refresh ---
+  // --- NTP Time Check every 24h ---
   if (millis() - lastNtpCheck >= ntpInterval) {
     requestNtpTime();
     lastNtpCheck = millis();
   }
 
-  // --- CSV Logging every 5 minutes ---
+  // --- CSV File Write every 5 min ---
   if (millis() - lastCsvWrite >= csvWriteInterval) {
     appendCsvData();
     lastCsvWrite = millis();
+  }
+
+  // --- Web Server Code Injection ---
+  EthernetClient client = server.available();
+  if (client) {
+    bool currentLineIsBlank = true;
+    String httpRequest = "";
+
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        httpRequest += c;
+
+        if (c == '\n' && currentLineIsBlank) {
+          if (httpRequest.startsWith("GET /temp.csv")) {
+            serveFile(client, "temp.csv", "text/csv");
+            break;
+          } else if (httpRequest.startsWith("GET /humid.csv")) {
+            serveFile(client, "humid.csv", "text/csv");
+            break;
+          } else if (httpRequest.startsWith("GET /")) {
+            serveRootPage(client);
+            break;
+          } else {
+            client.println("HTTP/1.1 404 Not Found");
+            client.println("Content-Type: text/plain");
+            client.println("Connection: close");
+            client.println();
+            client.println("404 Not Found");
+            break;
+          }
+        }
+
+        if (c == '\n') {
+          currentLineIsBlank = true;
+        } else if (c != '\r') {
+          currentLineIsBlank = false;
+        }
+      }
+    }
+    delay(1);
+    client.stop();
   }
 }
