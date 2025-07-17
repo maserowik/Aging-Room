@@ -437,8 +437,11 @@ void serveStatsPage(EthernetClient &client) {
 <!DOCTYPE html>
 <html>
 <head>
+
   <title>Seegrid Aging Room Statistics</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script> 
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; }
@@ -448,7 +451,7 @@ void serveStatsPage(EthernetClient &client) {
 </head>
 <body>
   <h1>Seegrid Aging Room Statistics For The Past 14 Days</h1>
-  <h2>Temperature (°C)</h2>
+  <h2>Temperature (&deg;C)</h2>
   <canvas id="tempChart"></canvas>
 
   <h2>Humidity (%)</h2>
