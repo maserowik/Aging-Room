@@ -490,8 +490,17 @@ bool tempOutOfRange =
   (!isnan(tC) && abs(tC - tempThreshold) > thresholdMargin) ||
   (!isnan(tD) && abs(tD - tempThreshold) > thresholdMargin);
 
-unsigned long blinkInterval = tempError ? blinkIntervalFast : blinkIntervalNormal;
-if (now - lastBlinkToggle >= blinkInterval) {
+unsigned long blinkInterval;
+
+if (tempError) {
+  blinkInterval = blinkIntervalFast; // Fast blink for error
+} else if (tempOutOfRange) {
+  blinkInterval = blinkIntervalNormal; // Slow blink for out of range
+} else {
+  blinkInterval = 0; // No blink when normal
+}
+
+if (blinkInterval > 0 && now - lastBlinkToggle >= blinkInterval) {
   blinkState = !blinkState;
   lastBlinkToggle = now;
 }
@@ -500,7 +509,7 @@ if (tempError) {
   digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
   digitalWrite(GREEN_LED_PIN, LOW);
 } else if (tempOutOfRange) {
-  digitalWrite(RED_LED_PIN, HIGH);
+  digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
   digitalWrite(GREEN_LED_PIN, LOW);
 } else {
   digitalWrite(GREEN_LED_PIN, HIGH);
