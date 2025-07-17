@@ -589,6 +589,7 @@ if (tempError) {
             break;
           } else if (httpRequest.startsWith("GET /delete_temp")) {
             SD.remove("temp.csv");
+            createCsvHeaderIfNeeded();
             client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: text/plain");
             client.println("Connection: close");
@@ -597,6 +598,7 @@ if (tempError) {
             break;
           } else if (httpRequest.startsWith("GET /delete_humid")) {
             SD.remove("humid.csv");
+            createCsvHeaderIfNeeded();
             client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: text/plain");
             client.println("Connection: close");
