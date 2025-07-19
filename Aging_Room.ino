@@ -52,7 +52,7 @@ unsigned long lastCsvWrite = 0;
 // --- Ethernet Server ---
 EthernetServer server(80);
 
-void sendNTPpacket(IPAddress& address) {
+void sendNTPpacket(IPAddress &address) {
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   packetBuffer[0] = 0b11100011;
   packetBuffer[1] = 0;
@@ -90,7 +90,7 @@ void epochToDateTime(unsigned long epoch, int &year, int &month, int &day, int &
     }
   }
 
-  int daysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+  int daysInMonth[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
   if (isLeapYear(year)) daysInMonth[1] = 29;
 
   month = 0;
@@ -138,7 +138,7 @@ void requestNtpTime() {
       unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
       unsigned long epoch = (highWord << 16) | lowWord;
 
-      unsigned long deviceEpoch = currentEpoch; // existing device time before update
+      unsigned long deviceEpoch = currentEpoch;  // existing device time before update
       long offset = (long)epoch - (long)deviceEpoch;
 
       Serial.print("NTP Offset (seconds): ");
@@ -155,11 +155,16 @@ void requestNtpTime() {
       Serial.print("DST Active: ");
       Serial.println(dstActive ? "Yes (EDT)" : "No (EST)");
       Serial.print("Local Date & Time: ");
-      Serial.print(month + 1); Serial.print("-");
-      Serial.print(day); Serial.print("-");
-      Serial.print(year); Serial.print(" ");
-      Serial.print(hour); Serial.print(":");
-      Serial.print(minute); Serial.print(":");
+      Serial.print(month + 1);
+      Serial.print("-");
+      Serial.print(day);
+      Serial.print("-");
+      Serial.print(year);
+      Serial.print(" ");
+      Serial.print(hour);
+      Serial.print(":");
+      Serial.print(minute);
+      Serial.print(":");
       Serial.println(second);
       return;
     }
@@ -208,9 +213,12 @@ void appendCsvData() {
   File tf = SD.open("temp.csv", FILE_WRITE);
   if (tf) {
     tf.print(dateStr + "," + timeStr + ",");
-    tf.print(isnan(tA) ? "ERR" : String(tA, 1) + " C"); tf.print(",");
-    tf.print(isnan(tB) ? "ERR" : String(tB, 1) + " C"); tf.print(",");
-    tf.print(isnan(tC) ? "ERR" : String(tC, 1) + " C"); tf.print(",");
+    tf.print(isnan(tA) ? "ERR" : String(tA, 1) + " C");
+    tf.print(",");
+    tf.print(isnan(tB) ? "ERR" : String(tB, 1) + " C");
+    tf.print(",");
+    tf.print(isnan(tC) ? "ERR" : String(tC, 1) + " C");
+    tf.print(",");
     tf.println(isnan(tD) ? "ERR" : String(tD, 1) + " C");
     tf.close();
 
@@ -233,9 +241,12 @@ void appendCsvData() {
   File hf = SD.open("humid.csv", FILE_WRITE);
   if (hf) {
     hf.print(dateStr + "," + timeStr + ",");
-    hf.print(isnan(hA) ? "ERR" : String(hA, 1) + " %"); hf.print(",");
-    hf.print(isnan(hB) ? "ERR" : String(hB, 1) + " %"); hf.print(",");
-    hf.print(isnan(hC) ? "ERR" : String(hC, 1) + " %"); hf.print(",");
+    hf.print(isnan(hA) ? "ERR" : String(hA, 1) + " %");
+    hf.print(",");
+    hf.print(isnan(hB) ? "ERR" : String(hB, 1) + " %");
+    hf.print(",");
+    hf.print(isnan(hC) ? "ERR" : String(hC, 1) + " %");
+    hf.print(",");
     hf.println(isnan(hD) ? "ERR" : String(hD, 1) + " %");
     hf.close();
 
@@ -258,7 +269,8 @@ void appendCsvData() {
 
 void setup() {
   Serial.begin(9600);
-  while (!Serial);
+  while (!Serial)
+    ;
 
   pinMode(RED_LED_PIN, OUTPUT);
   pinMode(GREEN_LED_PIN, OUTPUT);
@@ -270,25 +282,33 @@ void setup() {
   // ----- STARTUP SEQUENCE -----
   for (int i = 0; i < 5; i++) {
     lcd.clear();
-    lcd.setCursor(0, 0); lcd.print("System Booting");
+    lcd.setCursor(0, 0);
+    lcd.print("System Booting");
     for (int dot = 0; dot <= i && dot < 3; dot++) lcd.print(".");
     delay(1000);
   }
 
   lcd.clear();
-  lcd.setCursor(0, 0); lcd.print("Red/Green Stack");
-  lcd.setCursor(0, 1); lcd.print("LED Testing");
+  lcd.setCursor(0, 0);
+  lcd.print("Red/Green Stack");
+  lcd.setCursor(0, 1);
+  lcd.print("LED Testing");
   for (int i = 0; i < 2; i++) {
-    digitalWrite(RED_LED_PIN, HIGH); delay(250);
-    digitalWrite(RED_LED_PIN, LOW); delay(250);
+    digitalWrite(RED_LED_PIN, HIGH);
+    delay(250);
+    digitalWrite(RED_LED_PIN, LOW);
+    delay(250);
   }
   for (int i = 0; i < 2; i++) {
-    digitalWrite(GREEN_LED_PIN, HIGH); delay(250);
-    digitalWrite(GREEN_LED_PIN, LOW); delay(250);
+    digitalWrite(GREEN_LED_PIN, HIGH);
+    delay(250);
+    digitalWrite(GREEN_LED_PIN, LOW);
+    delay(250);
   }
 
   lcd.clear();
-  lcd.setCursor(0, 0); lcd.print("LCD Testing");
+  lcd.setCursor(0, 0);
+  lcd.print("LCD Testing");
   delay(1000);
   lcd.clear();
   for (int row = 0; row < 4; row++) {
@@ -300,12 +320,16 @@ void setup() {
   }
 
   lcd.clear();
-  lcd.setCursor(0, 0); lcd.print("System Ready");
+  lcd.setCursor(0, 0);
+  lcd.print("System Ready");
   delay(10000);
   lcd.clear();
   // ----- END STARTUP SEQUENCE -----
 
-  dhtA.begin(); dhtB.begin(); dhtC.begin(); dhtD.begin();
+  dhtA.begin();
+  dhtB.begin();
+  dhtC.begin();
+  dhtD.begin();
 
   // Load threshold from EEPROM
   EEPROM.get(0, tempThreshold);
@@ -320,7 +344,8 @@ void setup() {
   Serial.println("Starting Ethernet with DHCP...");
   if (Ethernet.begin(mac) == 0) {
     Serial.println("DHCP failed");
-    while (true);
+    while (true)
+      ;
   }
 
   delay(1000);
@@ -343,7 +368,7 @@ void setup() {
   server.begin();  // Start Ethernet server for web requests
 }
 
-void serveFile(EthernetClient &client, const char* filename, const char* contentType) {
+void serveFile(EthernetClient &client, const char *filename, const char *contentType) {
   if (SD.exists(filename)) {
     File file = SD.open(filename, FILE_READ);
     client.println("HTTP/1.1 200 OK");
@@ -371,28 +396,130 @@ void serveRootPage(EthernetClient &client) {
   client.println("Content-Type: text/html");
   client.println("Connection: close");
   client.println();
-  client.println("<!DOCTYPE html><html><head><title>CSV Download</title></head><body>");
-  client.println("<h1>Seegrid Aging Room Data</h1>");
+
+  client.println("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
+  client.println("<title>Seegrid Aging Room Data</title>");
+  client.println("<style>");
+  client.println("body{font-family:sans-serif;background:#f4f4f4;padding:20px;}");
+  client.println(".tab{display:inline-block;padding:10px 20px;margin:5px;background:#ccc;cursor:pointer;}");
+  client.println(".tab.active{background:#999;}");
+  client.println(".tab-content{display:none;}");
+  client.println(".tab-content.active{display:block;}");
+  client.println("canvas{max-width:100%;height:auto;}");
+  client.println("</style>");
+  client.println("<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>");
+  client.println("<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0'></script>");
+  client.println("</head><body>");
+
+  client.println("<h2>Seegrid Aging Room Data</h2>");
   client.print("<p>Last update: ");
   client.print(lastUpdate);
   client.println("</p>");
+
   client.println("<ul>");
   client.println("<li><a href=\"/temp.csv\">Download Temperature CSV</a></li>");
   client.println("<li><a href=\"/humid.csv\">Download Humidity CSV</a></li>");
   client.println("<li><a href=\"/delete_temp\">Delete Temperature CSV</a></li>");
   client.println("<li><a href=\"/delete_humid\">Delete Humidity CSV</a></li>");
   client.println("</ul>");
-  client.println("</body></html>");
+
+  // Tabs
+  client.println("<div>");
+  client.println("<div class='tab active' onclick=\"showTab('temp')\">Temperature</div>");
+  client.println("<div class='tab' onclick=\"showTab('humid')\">Humidity</div>");
+  client.println("</div>");
+
+  // Tab content: Temperature
+  client.println("<div id='temp' class='tab-content active'>");
+  client.println("<label>Range: <select id='tempRange'><option>1</option><option>3</option><option selected>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
+  client.println("<button onclick='resetZoom(tempChart)'>Reset Zoom</button>");
+  client.println("<button onclick='downloadChart(tempChart, \"temp\")'>Export</button>");
+  client.println("<canvas id='tempChart'></canvas></div>");
+
+  // Tab content: Humidity
+  client.println("<div id='humid' class='tab-content'>");
+  client.println("<label>Range: <select id='humidRange'><option>1</option><option>3</option><option selected>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
+  client.println("<button onclick='resetZoom(humidChart)'>Reset Zoom</button>");
+  client.println("<button onclick='downloadChart(humidChart, \"humid\")'>Export</button>");
+  client.println("<canvas id='humidChart'></canvas></div>");
+
+  // Script
+  client.println("<script>");
+  client.println("let tempChart, humidChart;");
+  client.println("function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));");
+  client.println("document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));");
+  client.println("document.getElementById(id).classList.add('active');");
+  client.println("event.target.classList.add('active');}");
+
+  client.println("function resetZoom(chart){chart.resetZoom();}");
+  client.println("function downloadChart(chart, label){const link=document.createElement('a');");
+  client.println("link.download=label+'_chart.png';link.href=chart.toBase64Image();link.click();}");
+
+  client.println("async function fetchData(filename, rangeDays){");
+  client.println("let res = await fetch('/'+filename); let text = await res.text();");
+  client.println("let lines = text.trim().split('\\n').slice(1);");
+  client.println("let limit = new Date().getTime() - rangeDays * 86400000;");
+  client.println("let labels=[], sensorsA=[], sensorsB=[], sensorsC=[], sensorsD=[];");
+  client.println("lines.forEach(line => {");
+  client.println("let [date,time,a,b,c,d] = line.split(',');");
+  client.println("let dt = new Date(date+' '+time); if(dt.getTime() >= limit){");
+  client.println("labels.push(date+' '+time);");
+  client.println("sensorsA.push(parseFloat(a)||null);");
+  client.println("sensorsB.push(parseFloat(b)||null);");
+  client.println("sensorsC.push(parseFloat(c)||null);");
+  client.println("sensorsD.push(parseFloat(d)||null);}});");
+  client.println("return {labels,sensorsA,sensorsB,sensorsC,sensorsD};}");
+
+  client.println("async function updateCharts(){");
+  client.println("let rangeT=parseInt(document.getElementById('tempRange').value);");
+  client.println("let rangeH=parseInt(document.getElementById('humidRange').value);");
+
+  client.println("let tempData = await fetchData('temp.csv',rangeT);");
+  client.println("let humidData = await fetchData('humid.csv',rangeH);");
+
+  client.println("let threshold = " + String(tempThreshold) + ";");
+
+  // Temperature chart config
+  client.println("if(tempChart) tempChart.destroy();");
+  client.println("tempChart = new Chart(document.getElementById('tempChart'), {type: 'line',data:{");
+  client.println("labels: tempData.labels,");
+  client.println("datasets: [");
+  client.println("{label:'Sensor A',data:tempData.sensorsA,borderColor:'red',fill:false},");
+  client.println("{label:'Sensor B',data:tempData.sensorsB,borderColor:'blue',fill:false},");
+  client.println("{label:'Sensor C',data:tempData.sensorsC,borderColor:'green',fill:false},");
+  client.println("{label:'Sensor D',data:tempData.sensorsD,borderColor:'orange',fill:false},");
+  client.println("{label:'Threshold',data:Array(tempData.labels.length).fill(threshold),borderColor:'black',borderDash:[5,5],pointRadius:0}]},");
+  client.println("options:{responsive:true,plugins:{zoom:{zoom:{wheel:{enabled:true}, pinch:{enabled:true}, mode:'x'},pan:{enabled:true,mode:'x'}}}}});");
+
+  // Humidity chart config
+  client.println("if(humidChart) humidChart.destroy();");
+  client.println("humidChart = new Chart(document.getElementById('humidChart'), {type: 'line',data:{");
+  client.println("labels: humidData.labels,");
+  client.println("datasets: [");
+  client.println("{label:'Sensor A',data:humidData.sensorsA,borderColor:'red',fill:false},");
+  client.println("{label:'Sensor B',data:humidData.sensorsB,borderColor:'blue',fill:false},");
+  client.println("{label:'Sensor C',data:humidData.sensorsC,borderColor:'green',fill:false},");
+  client.println("{label:'Sensor D',data:humidData.sensorsD,borderColor:'orange',fill:false}]},");
+  client.println("options:{responsive:true,plugins:{zoom:{zoom:{wheel:{enabled:true}, pinch:{enabled:true}, mode:'x'},pan:{enabled:true,mode:'x'}}}}});");
+
+  client.println("}");
+
+  client.println("document.getElementById('tempRange').addEventListener('change',updateCharts);");
+  client.println("document.getElementById('humidRange').addEventListener('change',updateCharts);");
+
+  client.println("setInterval(updateCharts, 300000);");
+  client.println("updateCharts();</script></body></html>");
 }
+
 
 void loop() {
   unsigned long now = millis();
   // --- Update internal clock every second ---
-static unsigned long lastEpochUpdate = 0;
-if (now - lastEpochUpdate >= 1000) {
-  currentEpoch++;
-  lastEpochUpdate = now;
-}
+  static unsigned long lastEpochUpdate = 0;
+  if (now - lastEpochUpdate >= 1000) {
+    currentEpoch++;
+    lastEpochUpdate = now;
+  }
 
 
   // --- Threshold Menu Button Hold ---
@@ -426,15 +553,20 @@ if (now - lastEpochUpdate >= 1000) {
         }
 
         if (blinkState) {
-          lcd.setCursor(0, 0); lcd.print("Adjustment Mode   ");
+          lcd.setCursor(0, 0);
+          lcd.print("Adjustment Mode   ");
         } else {
-          lcd.setCursor(0, 0); lcd.print("                  ");
+          lcd.setCursor(0, 0);
+          lcd.print("                  ");
         }
 
-        lcd.setCursor(0, 1); lcd.print("Adjusting...      ");
-        lcd.setCursor(0, 2); lcd.print("New Threshold: ");
+        lcd.setCursor(0, 1);
+        lcd.print("Adjusting...      ");
+        lcd.setCursor(0, 2);
+        lcd.print("New Threshold: ");
         lcd.print((int)tempThreshold);
-        lcd.setCursor(0, 3); lcd.print("Release to exit   ");
+        lcd.setCursor(0, 3);
+        lcd.print("Release to exit   ");
         delay(50);
       }
 
@@ -452,10 +584,13 @@ if (now - lastEpochUpdate >= 1000) {
       // Show old/new threshold — both blink
       lcd.clear();
       for (int i = 0; i < 20; i++) {
-        lcd.setCursor(0, 0); lcd.print("Threshold Updated ");
-        lcd.setCursor(0, 2); lcd.print("Old: ");
+        lcd.setCursor(0, 0);
+        lcd.print("Threshold Updated ");
+        lcd.setCursor(0, 2);
+        lcd.print("Old: ");
         lcd.print((int)oldThreshold);
-        lcd.setCursor(0, 3); lcd.print("New: ");
+        lcd.setCursor(0, 3);
+        lcd.print("New: ");
         lcd.print((int)tempThreshold);
 
         digitalWrite(RED_LED_PIN, i % 2);
@@ -471,53 +606,82 @@ if (now - lastEpochUpdate >= 1000) {
 
   // --- Sensor Readings ---
   if (now - lastSensorRead >= sensorReadInterval) {
-    tA = dhtA.readTemperature(); if (isnan(tA)) { delay(500); tA = dhtA.readTemperature(); }
-    tB = dhtB.readTemperature(); if (isnan(tB)) { delay(500); tB = dhtB.readTemperature(); }
-    tC = dhtC.readTemperature(); if (isnan(tC)) { delay(500); tC = dhtC.readTemperature(); }
-    tD = dhtD.readTemperature(); if (isnan(tD)) { delay(500); tD = dhtD.readTemperature(); }
+    tA = dhtA.readTemperature();
+    if (isnan(tA)) {
+      delay(500);
+      tA = dhtA.readTemperature();
+    }
+    tB = dhtB.readTemperature();
+    if (isnan(tB)) {
+      delay(500);
+      tB = dhtB.readTemperature();
+    }
+    tC = dhtC.readTemperature();
+    if (isnan(tC)) {
+      delay(500);
+      tC = dhtC.readTemperature();
+    }
+    tD = dhtD.readTemperature();
+    if (isnan(tD)) {
+      delay(500);
+      tD = dhtD.readTemperature();
+    }
 
-    hA = dhtA.readHumidity(); if (isnan(hA)) { delay(500); hA = dhtA.readHumidity(); }
-    hB = dhtB.readHumidity(); if (isnan(hB)) { delay(500); hB = dhtB.readHumidity(); }
-    hC = dhtC.readHumidity(); if (isnan(hC)) { delay(500); hC = dhtC.readHumidity(); }
-    hD = dhtD.readHumidity(); if (isnan(hD)) { delay(500); hD = dhtD.readHumidity(); }
+    hA = dhtA.readHumidity();
+    if (isnan(hA)) {
+      delay(500);
+      hA = dhtA.readHumidity();
+    }
+    hB = dhtB.readHumidity();
+    if (isnan(hB)) {
+      delay(500);
+      hB = dhtB.readHumidity();
+    }
+    hC = dhtC.readHumidity();
+    if (isnan(hC)) {
+      delay(500);
+      hC = dhtC.readHumidity();
+    }
+    hD = dhtD.readHumidity();
+    if (isnan(hD)) {
+      delay(500);
+      hD = dhtD.readHumidity();
+    }
 
     lastSensorRead = now;
   }
-// --- LED Logic ---
-bool tempError = isnan(tA) || isnan(tB) || isnan(tC) || isnan(tD);
-bool tempOutOfRange =
-  (!isnan(tA) && abs(tA - tempThreshold) > thresholdMargin) ||
-  (!isnan(tB) && abs(tB - tempThreshold) > thresholdMargin) ||
-  (!isnan(tC) && abs(tC - tempThreshold) > thresholdMargin) ||
-  (!isnan(tD) && abs(tD - tempThreshold) > thresholdMargin);
+  // --- LED Logic ---
+  bool tempError = isnan(tA) || isnan(tB) || isnan(tC) || isnan(tD);
+  bool tempOutOfRange =
+    (!isnan(tA) && abs(tA - tempThreshold) > thresholdMargin) || (!isnan(tB) && abs(tB - tempThreshold) > thresholdMargin) || (!isnan(tC) && abs(tC - tempThreshold) > thresholdMargin) || (!isnan(tD) && abs(tD - tempThreshold) > thresholdMargin);
 
-unsigned long blinkInterval;
+  unsigned long blinkInterval;
 
-if (tempError) {
-  blinkInterval = blinkIntervalFast; // Fast blink for error
-} else if (tempOutOfRange) {
-  blinkInterval = blinkIntervalNormal; // Slow blink for out of range
-} else {
-  blinkInterval = 0; // No blink when normal
-}
+  if (tempError) {
+    blinkInterval = blinkIntervalFast;  // Fast blink for error
+  } else if (tempOutOfRange) {
+    blinkInterval = blinkIntervalNormal;  // Slow blink for out of range
+  } else {
+    blinkInterval = 0;  // No blink when normal
+  }
 
-if (blinkInterval > 0 && now - lastBlinkToggle >= blinkInterval) {
-  blinkState = !blinkState;
-  lastBlinkToggle = now;
-}
+  if (blinkInterval > 0 && now - lastBlinkToggle >= blinkInterval) {
+    blinkState = !blinkState;
+    lastBlinkToggle = now;
+  }
 
-if (tempError) {
-  digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
-  digitalWrite(GREEN_LED_PIN, LOW);
-} else if (tempOutOfRange) {
-  digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
-  digitalWrite(GREEN_LED_PIN, LOW);
-} else {
-  digitalWrite(GREEN_LED_PIN, HIGH);
-  digitalWrite(RED_LED_PIN, LOW);
-}
+  if (tempError) {
+    digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
+    digitalWrite(GREEN_LED_PIN, LOW);
+  } else if (tempOutOfRange) {
+    digitalWrite(RED_LED_PIN, blinkState ? HIGH : LOW);
+    digitalWrite(GREEN_LED_PIN, LOW);
+  } else {
+    digitalWrite(GREEN_LED_PIN, HIGH);
+    digitalWrite(RED_LED_PIN, LOW);
+  }
 
- 
+
 
   // --- LCD Display ---
   if (now - lastDisplaySwitch >= 10000) {
@@ -526,35 +690,42 @@ if (tempError) {
     lastDisplaySwitch = now;
   }
 
-  lcd.setCursor(0, 0); lcd.print("Seegrid Aging Room");
+  lcd.setCursor(0, 0);
+  lcd.print("Seegrid Aging Room");
 
   if (displayMode == 0) {
-    lcd.setCursor(0, 1); lcd.print("Temperature       ");
-    lcd.setCursor(0, 2); lcd.print("A: ");
-    lcd.print(isnan(tA) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tA - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tA, 1) + " C");
-    lcd.setCursor(10, 2); lcd.print("B: ");
-    lcd.print(isnan(tB) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tB - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tB, 1) + " C");
-    lcd.setCursor(0, 3); lcd.print("C: ");
-    lcd.print(isnan(tC) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tC - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tC, 1) + " C");
-    lcd.setCursor(10, 3); lcd.print("D: ");
-    lcd.print(isnan(tD) ? (blinkState ? "ERR  " : "     ") :
-             (abs(tD - tempThreshold) > thresholdMargin && blinkState) ? "     " :
-             String(tD, 1) + " C");
+    lcd.setCursor(0, 1);
+    lcd.print("Temperature       ");
+    lcd.setCursor(0, 2);
+    lcd.print("A: ");
+    lcd.print(isnan(tA) ? (blinkState ? "ERR  " : "     ") : (abs(tA - tempThreshold) > thresholdMargin && blinkState) ? "     "
+                                                                                                                       : String(tA, 1) + " C");
+    lcd.setCursor(10, 2);
+    lcd.print("B: ");
+    lcd.print(isnan(tB) ? (blinkState ? "ERR  " : "     ") : (abs(tB - tempThreshold) > thresholdMargin && blinkState) ? "     "
+                                                                                                                       : String(tB, 1) + " C");
+    lcd.setCursor(0, 3);
+    lcd.print("C: ");
+    lcd.print(isnan(tC) ? (blinkState ? "ERR  " : "     ") : (abs(tC - tempThreshold) > thresholdMargin && blinkState) ? "     "
+                                                                                                                       : String(tC, 1) + " C");
+    lcd.setCursor(10, 3);
+    lcd.print("D: ");
+    lcd.print(isnan(tD) ? (blinkState ? "ERR  " : "     ") : (abs(tD - tempThreshold) > thresholdMargin && blinkState) ? "     "
+                                                                                                                       : String(tD, 1) + " C");
   } else {
-    lcd.setCursor(0, 1); lcd.print("Humidity          ");
-    lcd.setCursor(0, 2); lcd.print("A: ");
+    lcd.setCursor(0, 1);
+    lcd.print("Humidity          ");
+    lcd.setCursor(0, 2);
+    lcd.print("A: ");
     lcd.print(isnan(hA) ? (blinkState ? "ERR  " : "     ") : String(hA, 1) + " %");
-    lcd.setCursor(10, 2); lcd.print("B: ");
+    lcd.setCursor(10, 2);
+    lcd.print("B: ");
     lcd.print(isnan(hB) ? (blinkState ? "ERR  " : "     ") : String(hB, 1) + " %");
-    lcd.setCursor(0, 3); lcd.print("C: ");
+    lcd.setCursor(0, 3);
+    lcd.print("C: ");
     lcd.print(isnan(hC) ? (blinkState ? "ERR  " : "     ") : String(hC, 1) + " %");
-    lcd.setCursor(10, 3); lcd.print("D: ");
+    lcd.setCursor(10, 3);
+    lcd.print("D: ");
     lcd.print(isnan(hD) ? (blinkState ? "ERR  " : "     ") : String(hD, 1) + " %");
   }
 
@@ -570,7 +741,7 @@ if (tempError) {
     lastCsvWrite = millis();
   }
 
-    // --- Web Server Code Injection ---
+  // --- Web Server Code Injection ---
   EthernetClient client = server.available();
   if (client) {
     bool currentLineIsBlank = true;
