@@ -1,4 +1,5 @@
 
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
@@ -490,7 +491,12 @@ void serveRootPage(EthernetClient &client) {
   client.println("{label:'Sensor C',data:tempData.sensorsC,borderColor:'green',fill:false},");
   client.println("{label:'Sensor D',data:tempData.sensorsD,borderColor:'orange',fill:false},");
   client.println("{label:'Threshold',data:Array(tempData.labels.length).fill(threshold),borderColor:'black',borderDash:[5,5],pointRadius:0}]},");
-  client.println("options:{responsive:true,plugins:{zoom:{zoom:{wheel:{enabled:true}, pinch:{enabled:true}, mode:'x'},pan:{enabled:true,mode:'x'}}}}});");
+
+  client.println("options:{responsive:true,");
+  client.println("scales:{y:{ticks:{stepSize:1.0}}},");  // <-- THIS LINE ADDED for 1.0 step on Y axis
+  client.println("plugins:{zoom:{zoom:{wheel:{enabled:true}, pinch:{enabled:true}, mode:'x'},pan:{enabled:true,mode:'x'}}}}});");
+
+
 
   // Humidity chart config
   client.println("if(humidChart) humidChart.destroy();");
