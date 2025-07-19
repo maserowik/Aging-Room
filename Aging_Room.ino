@@ -398,6 +398,7 @@ void serveRootPage(EthernetClient &client) {
   client.println();
 
   client.println("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
+  client.println("<meta http-equiv=\"refresh\" content=\"300\">");
   client.println("<title>Seegrid Aging Room Data</title>");
   client.println("<style>");
   client.println("body{font-family:sans-serif;background:#f4f4f4;padding:20px;}");
@@ -431,14 +432,14 @@ void serveRootPage(EthernetClient &client) {
 
   // Tab content: Temperature
   client.println("<div id='temp' class='tab-content active'>");
-  client.println("<label>Range: <select id='tempRange'><option>1</option><option>3</option><option selected>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
+  client.println("<label>Range: <select id='tempRange'><option selected>1</option><option>3</option><option>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
   client.println("<button onclick='resetZoom(tempChart)'>Reset Zoom</button>");
   client.println("<button onclick='downloadChart(tempChart, \"temp\")'>Export</button>");
   client.println("<canvas id='tempChart'></canvas></div>");
 
   // Tab content: Humidity
   client.println("<div id='humid' class='tab-content'>");
-  client.println("<label>Range: <select id='humidRange'><option>1</option><option>3</option><option selected>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
+  client.println("<label>Range: <select id='humidRange'><option selected>1</option><option>3</option><option>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
   client.println("<button onclick='resetZoom(humidChart)'>Reset Zoom</button>");
   client.println("<button onclick='downloadChart(humidChart, \"humid\")'>Export</button>");
   client.println("<canvas id='humidChart'></canvas></div>");
