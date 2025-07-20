@@ -544,13 +544,22 @@ void loop() {
       unsigned long lastIncTime = 0;
       lcd.clear();
 
+      for (int i = 0; i < 10; i++) {
+        digitalWrite(GREEN_LED_PIN, HIGH);
+        digitalWrite(RED_LED_PIN, LOW);
+        delay(250);
+        digitalWrite(GREEN_LED_PIN, LOW);
+        delay(250);
+      }
+
+
       while (digitalRead(BUTTON_PIN) == LOW) {
-        if (millis() - lastBlinkToggle >= 500) {
+        if (millis() - lastBlinkToggle >= 250) {
           blinkState = !blinkState;
           lastBlinkToggle = millis();
         }
 
-        digitalWrite(GREEN_LED_PIN, HIGH);
+        digitalWrite(GREEN_LED_PIN, blinkState ? HIGH : LOW);
         digitalWrite(RED_LED_PIN, LOW);
 
         if (millis() - lastIncTime >= 2000) {
