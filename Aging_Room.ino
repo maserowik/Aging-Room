@@ -1,5 +1,3 @@
-
-
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
@@ -8,6 +6,18 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <SD.h>
+
+
+// EEPROM address where the threshold is stored
+#define EEPROM_TEMP_THRESHOLD_ADDR 0
+
+// Threshold limits
+#define MIN_THRESHOLD 20
+#define MAX_THRESHOLD 50
+
+// Default threshold if EEPROM value is invalid
+#define DEFAULT_TEMP_THRESHOLD 20
+float tempThreshold = DEFAULT_TEMP_THRESHOLD;
 
 // --- NTP & Ethernet config ---
 byte mac[] = { 0xA8, 0x61, 0x0A, 0xAE, 0x30, 0x21 };
@@ -29,7 +39,7 @@ LiquidCrystal_I2C lcd(0x3F, 20, 4);
 #define GREEN_LED_PIN 7
 #define BUTTON_PIN 13
 
-float tempThreshold = 22.0;
+//float tempThreshold = 22.0;
 const float thresholdMargin = 3.0;
 const unsigned long blinkIntervalNormal = 500;
 const unsigned long blinkIntervalFast = 250;
@@ -479,7 +489,10 @@ void serveRootPage(EthernetClient &client) {
   client.println("let tempData = await fetchData('temp.csv',rangeT);");
   client.println("let humidData = await fetchData('humid.csv',rangeH);");
 
-  client.println("let threshold = " + String(tempThreshold) + ";");
+  client.print(F("let threshold = "));
+  client.print(tempThreshold, 1);
+  client.println(";");
+
 
   // Temperature chart config
   client.println("if(tempChart) tempChart.destroy();");
