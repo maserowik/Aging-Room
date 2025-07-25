@@ -429,11 +429,6 @@ void serveRootPage(EthernetClient &client) {
   client.print(lastUpdate);
   client.println(F("</p>"));
 
-  client.println(F("<ul>"));
-  client.println(F("<li><a href=\"/temp.csv\">Download Temperature CSV</a></li>"));
-  client.println(F("<li><a href=\"/humid.csv\">Download Humidity CSV</a></li>"));
-  client.println(F("</ul>"));
-
   // Tabs
   client.println(F("<div>"));
   client.println(F("<div class='tab active' onclick=\"showTab('temp', event)\">Temperature</div>"));
