@@ -403,132 +403,163 @@ void serveFile(EthernetClient &client, const char *filename, const char *content
 
 void serveRootPage(EthernetClient &client) {
   String lastUpdate = getDateString() + " " + getTimeString();
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
-  client.println("Connection: close");
+
+  client.println(F("HTTP/1.1 200 OK"));
+  client.println(F("Content-Type: text/html"));
+  client.println(F("Connection: close"));
   client.println();
 
-  client.println("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
-  client.println("<meta http-equiv=\"refresh\" content=\"300\">");
-  client.println("<title>Seegrid Aging Room Data</title>");
-  client.println("<style>");
-  client.println("body{font-family:sans-serif;background:#f4f4f4;padding:20px;}");
-  client.println(".tab{display:inline-block;padding:10px 20px;margin:5px;background:#ccc;cursor:pointer;}");
-  client.println(".tab.active{background:#999;}");
-  client.println(".tab-content{display:none;}");
-  client.println(".tab-content.active{display:block;}");
-  client.println("canvas{max-width:100%;height:auto;}");
-  client.println("</style>");
-  client.println("<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>");
-  client.println("<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0'></script>");
-  client.println("</head><body>");
+  client.println(F("<!DOCTYPE html><html><head><meta charset='UTF-8'>"));
+  client.println(F("<meta http-equiv='refresh' content='300'>"));
+  client.println(F("<title>Seegrid Aging Room Data</title>"));
+  client.println(F("<style>"));
+  client.println(F("body{font-family:sans-serif;background:#f4f4f4;padding:20px;}"));
+  client.println(F(".tab{display:inline-block;padding:10px 20px;margin:5px;background:#ccc;cursor:pointer;}"));
+  client.println(F(".tab.active{background:#999;}"));
+  client.println(F(".tab-content{display:none;}"));
+  client.println(F(".tab-content.active{display:block;}"));
+  client.println(F("canvas{width:1024px;height:768px;}"));
+  client.println(F("button { margin-left: 10px; }"));
+  client.println(F("</style>"));
+  client.println(F("<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>"));
+  client.println(F("</head><body>"));
 
-  client.println("<h2>Seegrid Aging Room Data</h2>");
-  client.print("<p>Last update: ");
+  client.println(F("<h2>Seegrid Aging Room Data</h2>"));
+  client.print(F("<p>Last update: "));
   client.print(lastUpdate);
-  client.println("</p>");
+  client.println(F("</p>"));
 
-  client.println("<ul>");
-  client.println("<li><a href=\"/temp.csv\">Download Temperature CSV</a></li>");
-  client.println("<li><a href=\"/humid.csv\">Download Humidity CSV</a></li>");
-  client.println("<li><a href=\"/delete_temp\">Delete Temperature CSV</a></li>");
-  client.println("<li><a href=\"/delete_humid\">Delete Humidity CSV</a></li>");
-  client.println("</ul>");
+  client.println(F("<ul>"));
+  client.println(F("<li><a href=\"/temp.csv\">Download Temperature CSV</a></li>"));
+  client.println(F("<li><a href=\"/humid.csv\">Download Humidity CSV</a></li>"));
+  client.println(F("</ul>"));
 
   // Tabs
-  client.println("<div>");
-  client.println("<div class='tab active' onclick=\"showTab('temp')\">Temperature</div>");
-  client.println("<div class='tab' onclick=\"showTab('humid')\">Humidity</div>");
-  client.println("</div>");
+  client.println(F("<div>"));
+  client.println(F("<div class='tab active' onclick=\"showTab('temp', event)\">Temperature</div>"));
+  client.println(F("<div class='tab' onclick=\"showTab('humid', event)\">Humidity</div>"));
+  client.println(F("</div>"));
 
-  // Tab content: Temperature
-  client.println("<div id='temp' class='tab-content active'>");
-  client.println("<label>Range: <select id='tempRange'><option selected>1</option><option>3</option><option>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
-  client.println("<button onclick='resetZoom(tempChart)'>Reset Zoom</button>");
-  client.println("<button onclick='downloadChart(tempChart, \"temp\")'>Export</button>");
-  client.println("<canvas id='tempChart'></canvas></div>");
+  // Temperature Tab Content
+  client.println(F("<div id='temp' class='tab-content active'>"));
+  client.println(F("<label>Range: <select id='tempRange'><option selected>1</option><option>3</option><option>5</option><option>7</option></select> days</label>"));
+  client.println(F("<button onclick='downloadChart(tempChart, \"temp\")'>Export PNG</button>"));
+  client.println(F("<button onclick=\"window.location='/temp.csv'\">Download CSV</button>"));
+  client.println(F("<button onclick='confirmDelete(\"temp\")'>Delete CSV</button>"));
+  client.println(F("<br><canvas id='tempChart'></canvas></div>"));
 
-  // Tab content: Humidity
-  client.println("<div id='humid' class='tab-content'>");
-  client.println("<label>Range: <select id='humidRange'><option selected>1</option><option>3</option><option>5</option><option>7</option><option>10</option><option>14</option></select> days</label>");
-  client.println("<button onclick='resetZoom(humidChart)'>Reset Zoom</button>");
-  client.println("<button onclick='downloadChart(humidChart, \"humid\")'>Export</button>");
-  client.println("<canvas id='humidChart'></canvas></div>");
+  // Humidity Tab Content
+  client.println(F("<div id='humid' class='tab-content'>"));
+  client.println(F("<label>Range: <select id='humidRange'><option selected>1</option><option>3</option><option>5</option><option>7</option></select> days</label>"));
+  client.println(F("<button onclick='downloadChart(humidChart, \"humid\")'>Export PNG</button>"));
+  client.println(F("<button onclick=\"window.location='/humid.csv'\">Download CSV</button>"));
+  client.println(F("<button onclick='confirmDelete(\"humid\")'>Delete CSV</button>"));
+  client.println(F("<br><canvas id='humidChart'></canvas></div>"));
 
-  // Script
-  client.println("<script>");
-  client.println("let tempChart, humidChart;");
-  client.println("function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));");
-  client.println("document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));");
-  client.println("document.getElementById(id).classList.add('active');");
-  client.println("event.target.classList.add('active');}");
+  // Scripts
+  client.println(F("<script>"));
+  client.println(F("let tempChart, humidChart;"));
 
-  client.println("function resetZoom(chart){chart.resetZoom();}");
-  client.println("function downloadChart(chart, label){const link=document.createElement('a');");
-  client.println("link.download=label+'_chart.png';link.href=chart.toBase64Image();link.click();}");
+  client.println(F("function showTab(id, evt){"));
+  client.println(F("  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));"));
+  client.println(F("  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));"));
+  client.println(F("  document.getElementById(id).classList.add('active');"));
+  client.println(F("  evt.target.classList.add('active');"));
+  client.println(F("}"));
 
-  client.println("async function fetchData(filename, rangeDays){");
-  client.println("let res = await fetch('/'+filename); let text = await res.text();");
-  client.println("let lines = text.trim().split('\\n').slice(1);");
-  client.println("let limit = new Date().getTime() - rangeDays * 86400000;");
-  client.println("let labels=[], sensorsA=[], sensorsB=[], sensorsC=[], sensorsD=[];");
-  client.println("lines.forEach(line => {");
-  client.println("let [date,time,a,b,c,d] = line.split(',');");
-  client.println("let dt = new Date(date+' '+time); if(dt.getTime() >= limit){");
-  client.println("labels.push(date+' '+time);");
-  client.println("sensorsA.push(parseFloat(a)||null);");
-  client.println("sensorsB.push(parseFloat(b)||null);");
-  client.println("sensorsC.push(parseFloat(c)||null);");
-  client.println("sensorsD.push(parseFloat(d)||null);}});");
-  client.println("return {labels,sensorsA,sensorsB,sensorsC,sensorsD};}");
+  client.println(F("function downloadChart(chart, label){"));
+  client.println(F("  if(!chart) return;"));
+  client.println(F("  const link = document.createElement('a');"));
+  client.println(F("  link.download = label + '_chart.png';"));
+  client.println(F("  link.href = chart.toBase64Image();"));
+  client.println(F("  link.click();"));
+  client.println(F("}"));
 
-  client.println("async function updateCharts(){");
-  client.println("let rangeT=parseInt(document.getElementById('tempRange').value);");
-  client.println("let rangeH=parseInt(document.getElementById('humidRange').value);");
+  client.println(F("function confirmDelete(type) {"));
+  client.println(F("  if(confirm('Are you sure you want to delete the ' + type + ' CSV file?')) {"));
+  client.println(F("    window.location = '/delete_' + type;"));
+  client.println(F("  }"));
+  client.println(F("}"));
 
-  client.println("let tempData = await fetchData('temp.csv',rangeT);");
-  client.println("let humidData = await fetchData('humid.csv',rangeH);");
+  // Fetch CSV data and parse, filtering by selected days
+  client.println(F("async function fetchData(filename, rangeDays) {"));
+  client.println(F("  let res = await fetch('/' + filename);"));
+  client.println(F("  let text = await res.text();"));
+  client.println(F("  let lines = text.trim().split('\\n').slice(1);"));
+  client.println(F("  let limit = new Date().getTime() - rangeDays * 86400000;"));
+  client.println(F("  let labels=[], sensorsA=[], sensorsB=[], sensorsC=[], sensorsD=[];"));
+  client.println(F("  lines.forEach(line => {"));
+  client.println(F("    let [date, time, a, b, c, d] = line.split(',');"));
+  client.println(F("    let dt = new Date(date + ' ' + time);"));
+  client.println(F("    if(dt.getTime() >= limit){"));
+  client.println(F("      labels.push(date + ' ' + time);"));
+  client.println(F("      sensorsA.push(parseFloat(a) || null);"));
+  client.println(F("      sensorsB.push(parseFloat(b) || null);"));
+  client.println(F("      sensorsC.push(parseFloat(c) || null);"));
+  client.println(F("      sensorsD.push(parseFloat(d) || null);"));
+  client.println(F("    }"));
+  client.println(F("  });"));
+  client.println(F("  return {labels, sensorsA, sensorsB, sensorsC, sensorsD};"));
+  client.println(F("}"));
 
-  client.print(F("let threshold = "));
+  // Update charts based on selected ranges
+  client.print(F("const threshold = "));
   client.print(tempThreshold, 1);
-  client.println(";");
+  client.println(F(";"));
 
+  client.println(F("async function updateCharts(){"));
 
-  // Temperature chart config
-  client.println("if(tempChart) tempChart.destroy();");
-  client.println("tempChart = new Chart(document.getElementById('tempChart'), {type: 'line',data:{");
-  client.println("labels: tempData.labels,");
-  client.println("datasets: [");
-  client.println("{label:'Sensor A',data:tempData.sensorsA,borderColor:'red',fill:false},");
-  client.println("{label:'Sensor B',data:tempData.sensorsB,borderColor:'blue',fill:false},");
-  client.println("{label:'Sensor C',data:tempData.sensorsC,borderColor:'green',fill:false},");
-  client.println("{label:'Sensor D',data:tempData.sensorsD,borderColor:'orange',fill:false},");
-  client.println("{label:'Threshold',data:Array(tempData.labels.length).fill(threshold),borderColor:'black',borderDash:[5,5],pointRadius:0}]},");
+  client.println(F("  let rangeT = parseInt(document.getElementById('tempRange').value);"));
+  client.println(F("  let rangeH = parseInt(document.getElementById('humidRange').value);"));
 
-  client.println("options:{responsive:true,");
-  client.println("scales:{y:{ticks:{stepSize:1.0}}},");  // <-- THIS LINE ADDED for 1.0 step on Y axis
-  client.println("plugins:{zoom:{zoom:{wheel:{enabled:true}, pinch:{enabled:true}, mode:'x'},pan:{enabled:true,mode:'x'}}}}});");
+  client.println(F("  let tempData = await fetchData('temp.csv', rangeT);"));
+  client.println(F("  let humidData = await fetchData('humid.csv', rangeH);"));
 
+  client.println(F("  if(tempChart) tempChart.destroy();"));
+  client.println(F("  tempChart = new Chart(document.getElementById('tempChart'), {"));
+  client.println(F("    type: 'line',"));
+  client.println(F("    data: {"));
+  client.println(F("      labels: tempData.labels,"));
+  client.println(F("      datasets: ["));
+  client.println(F("        {label: 'Sensor A', data: tempData.sensorsA, borderColor: 'red', fill: false},"));
+  client.println(F("        {label: 'Sensor B', data: tempData.sensorsB, borderColor: 'blue', fill: false},"));
+  client.println(F("        {label: 'Sensor C', data: tempData.sensorsC, borderColor: 'green', fill: false},"));
+  client.println(F("        {label: 'Sensor D', data: tempData.sensorsD, borderColor: 'orange', fill: false},"));
+  client.println(F("        {label: 'Threshold', data: Array(tempData.labels.length).fill(threshold), borderColor: 'black', borderDash: [5,5], pointRadius: 0}"));
+  client.println(F("      ]"));
+  client.println(F("    },"));
+  client.println(F("    options: {"));
+  client.println(F("      responsive: true,"));
+  client.println(F("      scales: { y: { ticks: { stepSize: 1.0 } } }"));
+  client.println(F("    }"));
+  client.println(F("  });"));
 
+  client.println(F("  if(humidChart) humidChart.destroy();"));
+  client.println(F("  humidChart = new Chart(document.getElementById('humidChart'), {"));
+  client.println(F("    type: 'line',"));
+  client.println(F("    data: {"));
+  client.println(F("      labels: humidData.labels,"));
+  client.println(F("      datasets: ["));
+  client.println(F("        {label: 'Sensor A', data: humidData.sensorsA, borderColor: 'red', fill: false},"));
+  client.println(F("        {label: 'Sensor B', data: humidData.sensorsB, borderColor: 'blue', fill: false},"));
+  client.println(F("        {label: 'Sensor C', data: humidData.sensorsC, borderColor: 'green', fill: false},"));
+  client.println(F("        {label: 'Sensor D', data: humidData.sensorsD, borderColor: 'orange', fill: false}"));
+  client.println(F("      ]"));
+  client.println(F("    },"));
+  client.println(F("    options: {"));
+  client.println(F("      responsive: true"));
+  client.println(F("    }"));
+  client.println(F("  });"));
 
-  // Humidity chart config
-  client.println("if(humidChart) humidChart.destroy();");
-  client.println("humidChart = new Chart(document.getElementById('humidChart'), {type: 'line',data:{");
-  client.println("labels: humidData.labels,");
-  client.println("datasets: [");
-  client.println("{label:'Sensor A',data:humidData.sensorsA,borderColor:'red',fill:false},");
-  client.println("{label:'Sensor B',data:humidData.sensorsB,borderColor:'blue',fill:false},");
-  client.println("{label:'Sensor C',data:humidData.sensorsC,borderColor:'green',fill:false},");
-  client.println("{label:'Sensor D',data:humidData.sensorsD,borderColor:'orange',fill:false}]},");
-  client.println("options:{responsive:true,plugins:{zoom:{zoom:{wheel:{enabled:true}, pinch:{enabled:true}, mode:'x'},pan:{enabled:true,mode:'x'}}}}});");
+  client.println(F("}"));
 
-  client.println("}");
+  client.println(F("document.getElementById('tempRange').addEventListener('change', updateCharts);"));
+  client.println(F("document.getElementById('humidRange').addEventListener('change', updateCharts);"));
 
-  client.println("document.getElementById('tempRange').addEventListener('change',updateCharts);");
-  client.println("document.getElementById('humidRange').addEventListener('change',updateCharts);");
+  client.println(F("setInterval(updateCharts, 300000);"));  // Update every 5 min
+  client.println(F("updateCharts();"));
 
-  client.println("setInterval(updateCharts, 300000);");
-  client.println("updateCharts();</script></body></html>");
+  client.println(F("</script></body></html>"));
 }
 
 
