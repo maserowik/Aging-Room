@@ -418,7 +418,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F(".tab.active{background:#999;}"));
   client.println(F(".tab-content{display:none;}"));
   client.println(F(".tab-content.active{display:block;}"));
-  client.println(F("canvas{width:1024px;height:768px;}"));
+  client.println(F("canvas{max-width:100%;height:200px;}"));  // Shrunk graph
   client.println(F("button { margin-left: 10px; }"));
   client.println(F("</style>"));
   client.println(F("<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>"));
@@ -439,17 +439,17 @@ void serveRootPage(EthernetClient &client) {
   // Temperature Tab Content
   client.println(F("<div id='temp' class='tab-content active'>"));
   client.println(F("<label>Range: <select id='tempRange'><option selected>1</option><option>3</option><option>5</option><option>7</option></select> days</label>"));
-  client.println(F("<button onclick='downloadChart(tempChart, \"temp\")'>Export PNG</button>"));
-  client.println(F("<button onclick=\"window.location='/temp.csv'\">Download CSV</button>"));
-  client.println(F("<button onclick='confirmDelete(\"temp\")'>Delete CSV</button>"));
+  client.println(F("<button onclick='downloadChart(tempChart, \"temp\")'>Export Temperature PNG</button>"));
+  client.println(F("<button onclick=\"window.location='/temp.csv'\">Download Temperature CSV</button>"));
+  client.println(F("<button onclick='confirmDelete(\"temp\")'>Delete Temperature CSV</button>"));
   client.println(F("<br><canvas id='tempChart'></canvas></div>"));
 
   // Humidity Tab Content
   client.println(F("<div id='humid' class='tab-content'>"));
   client.println(F("<label>Range: <select id='humidRange'><option selected>1</option><option>3</option><option>5</option><option>7</option></select> days</label>"));
-  client.println(F("<button onclick='downloadChart(humidChart, \"humid\")'>Export PNG</button>"));
-  client.println(F("<button onclick=\"window.location='/humid.csv'\">Download CSV</button>"));
-  client.println(F("<button onclick='confirmDelete(\"humid\")'>Delete CSV</button>"));
+  client.println(F("<button onclick='downloadChart(humidChart, \"humid\")'>Export Humidity PNG</button>"));
+  client.println(F("<button onclick=\"window.location='/humid.csv'\">Download Humidity CSV</button>"));
+  client.println(F("<button onclick='confirmDelete(\"humid\")'>Delete Humidity CSV</button>"));
   client.println(F("<br><canvas id='humidChart'></canvas></div>"));
 
   // Scripts
@@ -503,6 +503,8 @@ void serveRootPage(EthernetClient &client) {
   client.print(tempThreshold, 1);
   client.println(F(";"));
 
+  client.println(F("const margin = 3.0;"));
+
   client.println(F("async function updateCharts(){"));
 
   client.println(F("  let rangeT = parseInt(document.getElementById('tempRange').value);"));
@@ -521,7 +523,9 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("        {label: 'Sensor B', data: tempData.sensorsB, borderColor: 'blue', fill: false},"));
   client.println(F("        {label: 'Sensor C', data: tempData.sensorsC, borderColor: 'green', fill: false},"));
   client.println(F("        {label: 'Sensor D', data: tempData.sensorsD, borderColor: 'orange', fill: false},"));
-  client.println(F("        {label: 'Threshold', data: Array(tempData.labels.length).fill(threshold), borderColor: 'black', borderDash: [5,5], pointRadius: 0}"));
+  client.println(F("        {label: 'Threshold', data: Array(tempData.labels.length).fill(threshold), borderColor: 'black', borderDash: [5,5], pointRadius: 0},"));
+  client.println(F("        {label: '+ Margin', data: Array(tempData.labels.length).fill(threshold + margin), borderColor: 'gray', borderDash: [2,2], pointRadius: 0},"));
+  client.println(F("        {label: '- Margin', data: Array(tempData.labels.length).fill(threshold - margin), borderColor: 'gray', borderDash: [2,2], pointRadius: 0}"));
   client.println(F("      ]"));
   client.println(F("    },"));
   client.println(F("    options: {"));
