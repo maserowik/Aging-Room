@@ -429,6 +429,7 @@ void serveRootPage(EthernetClient &client) {
   client.print(lastUpdate);
   client.println(F("</p>"));
 
+
   // Tabs
   client.println(F("<div>"));
   client.println(F("<div class='tab active' onclick=\"showTab('temp', event)\">Temperature</div>"));
