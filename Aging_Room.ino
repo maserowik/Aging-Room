@@ -57,7 +57,7 @@ float hA = NAN, hB = NAN, hC = NAN, hD = NAN;
 
 // --- SD card ---
 const int chipSelect = 4;
-const unsigned long csvWriteInterval = 300000;  //how often the CSV is upated in milliseconds
+const unsigned long csvWriteInterval = 300000; 
 unsigned long lastCsvWrite = 0;
 
 // --- Ethernet Server ---
@@ -149,7 +149,7 @@ void requestNtpTime() {
       unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
       unsigned long epoch = (highWord << 16) | lowWord;
 
-      unsigned long deviceEpoch = currentEpoch;  // existing device time before update
+      unsigned long deviceEpoch = currentEpoch;  
       long offset = (long)epoch - (long)deviceEpoch;
 
       Serial.print("NTP Offset (seconds): ");
@@ -332,7 +332,9 @@ void setup() {
 
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("System Ready");
+  lcd.print("System Getting Ready");
+  lcd.setCursor(0,1);
+  lcd.print("Getting DHT Sensors Ready");
   delay(10000);
   lcd.clear();
   // ----- END STARTUP SEQUENCE -----
@@ -418,7 +420,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F(".tab.active{background:#999;}"));
   client.println(F(".tab-content{display:none;}"));
   client.println(F(".tab-content.active{display:block;}"));
-  client.println(F("canvas{max-width:100%;height:200px;}"));  // Shrunk graph
+  client.println(F("canvas { width: 100% !important; height: auto !important; }"));
   client.println(F("button { margin-left: 10px; }"));
   client.println(F("</style>"));
   client.println(F("<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>"));
@@ -442,7 +444,10 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("<button onclick='downloadChart(tempChart, \"temp\")'>Export Temperature PNG</button>"));
   client.println(F("<button onclick=\"window.location='/temp.csv'\">Download Temperature CSV</button>"));
   client.println(F("<button onclick='confirmDelete(\"temp\")'>Delete Temperature CSV</button>"));
-  client.println(F("<br><canvas id='tempChart'></canvas></div>"));
+  client.println(F("<button onclick='updateCharts()'>Update Now</button>"));
+  client.println(F("<br><div style='max-width:1100px; height:700px;'><canvas id='tempChart'></canvas></div></div>"));
+
+
 
   // Humidity Tab Content
   client.println(F("<div id='humid' class='tab-content'>"));
@@ -450,7 +455,9 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("<button onclick='downloadChart(humidChart, \"humid\")'>Export Humidity PNG</button>"));
   client.println(F("<button onclick=\"window.location='/humid.csv'\">Download Humidity CSV</button>"));
   client.println(F("<button onclick='confirmDelete(\"humid\")'>Delete Humidity CSV</button>"));
-  client.println(F("<br><canvas id='humidChart'></canvas></div>"));
+  client.println(F("<button onclick='updateCharts()'>Update Now</button>"));
+  client.println(F("<br><div style='max-width:1100px; height:700px;'><canvas id='humidChart'></canvas></div></div>"));
+
 
   // Scripts
   client.println(F("<script>"));
@@ -530,6 +537,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("    },"));
   client.println(F("    options: {"));
   client.println(F("      responsive: true,"));
+  client.println(F("      maintainAspectRatio: false,"));
   client.println(F("      scales: { y: { ticks: { stepSize: 1.0 } } }"));
   client.println(F("    }"));
   client.println(F("  });"));
@@ -547,7 +555,8 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("      ]"));
   client.println(F("    },"));
   client.println(F("    options: {"));
-  client.println(F("      responsive: true"));
+  client.println(F("      responsive: true,"));
+  client.println(F("      maintainAspectRatio: false"));
   client.println(F("    }"));
   client.println(F("  });"));
 
@@ -556,7 +565,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("document.getElementById('tempRange').addEventListener('change', updateCharts);"));
   client.println(F("document.getElementById('humidRange').addEventListener('change', updateCharts);"));
 
-  client.println(F("setInterval(updateCharts, 300000);"));  // Update every 5 min
+  client.println(F("setInterval(updateCharts, 300000);"));  
   client.println(F("updateCharts();"));
 
   client.println(F("</script></body></html>"));
