@@ -57,7 +57,7 @@ float hA = NAN, hB = NAN, hC = NAN, hD = NAN;
 
 // --- SD card ---
 const int chipSelect = 4;
-const unsigned long csvWriteInterval = 300000; 
+const unsigned long csvWriteInterval = 300000;
 unsigned long lastCsvWrite = 0;
 
 // --- Ethernet Server ---
@@ -149,7 +149,7 @@ void requestNtpTime() {
       unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
       unsigned long epoch = (highWord << 16) | lowWord;
 
-      unsigned long deviceEpoch = currentEpoch;  
+      unsigned long deviceEpoch = currentEpoch;
       long offset = (long)epoch - (long)deviceEpoch;
 
       Serial.print("NTP Offset (seconds): ");
@@ -333,8 +333,8 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("System Getting Ready");
-  lcd.setCursor(0,1);
-  lcd.print("Getting DHT Sensors Ready");
+  lcd.setCursor(0, 1);
+  lcd.print("Standby");
   delay(10000);
   lcd.clear();
   // ----- END STARTUP SEQUENCE -----
@@ -491,7 +491,9 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("  let lines = text.trim().split('\\n').slice(1);"));
   client.println(F("  let limit = new Date().getTime() - rangeDays * 86400000;"));
   client.println(F("  let labels=[], sensorsA=[], sensorsB=[], sensorsC=[], sensorsD=[];"));
-  client.println(F("  lines.forEach(line => {"));
+  client.println(F("  let downsampleRate = 12; // every 12th reading (1/hour for 5-min logs)"));
+  client.println(F("  lines.forEach((line, idx) => {"));
+  client.println(F("    if (idx % downsampleRate !== 0) return;"));
   client.println(F("    let [date, time, a, b, c, d] = line.split(',');"));
   client.println(F("    let dt = new Date(date + ' ' + time);"));
   client.println(F("    if(dt.getTime() >= limit){"));
@@ -504,6 +506,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("  });"));
   client.println(F("  return {labels, sensorsA, sensorsB, sensorsC, sensorsD};"));
   client.println(F("}"));
+
 
   // Update charts based on selected ranges
   client.print(F("const threshold = "));
@@ -565,7 +568,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("document.getElementById('tempRange').addEventListener('change', updateCharts);"));
   client.println(F("document.getElementById('humidRange').addEventListener('change', updateCharts);"));
 
-  client.println(F("setInterval(updateCharts, 300000);"));  
+  client.println(F("setInterval(updateCharts, 300000);"));
   client.println(F("updateCharts();"));
 
   client.println(F("</script></body></html>"));
