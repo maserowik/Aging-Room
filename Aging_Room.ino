@@ -371,6 +371,23 @@ void setup() {
 
   if (!SD.begin(chipSelect)) {
     Serial.println("SD card initialization failed!");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("SD Init Failed!");
+
+    // Blink red LED fast forever
+    while (true) {
+      digitalWrite(RED_LED_PIN, HIGH);
+      delay(500);
+      digitalWrite(RED_LED_PIN, LOW);
+      delay(500);
+    }
+
+
+
+
+
+
   } else {
     Serial.println("SD card initialized.");
     createCsvHeaderIfNeeded();
@@ -534,8 +551,8 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("        {label: 'Sensor C', data: tempData.sensorsC, borderColor: 'green', fill: false},"));
   client.println(F("        {label: 'Sensor D', data: tempData.sensorsD, borderColor: 'orange', fill: false},"));
   client.println(F("        {label: 'Threshold', data: Array(tempData.labels.length).fill(threshold), borderColor: 'black', borderDash: [5,5], pointRadius: 0},"));
-  client.println(F("        {label: '+ Margin', data: Array(tempData.labels.length).fill(threshold + margin), borderColor: 'gray', borderDash: [2,2], pointRadius: 0},"));
-  client.println(F("        {label: '- Margin', data: Array(tempData.labels.length).fill(threshold - margin), borderColor: 'gray', borderDash: [2,2], pointRadius: 0}"));
+  client.println(F("        {label: 'High Threshold', data: Array(tempData.labels.length).fill(threshold + margin), borderColor: 'gray', borderDash: [2,2], pointRadius: 0},"));
+  client.println(F("        {label: 'Low Threshold', data: Array(tempData.labels.length).fill(threshold - margin), borderColor: 'gray', borderDash: [2,2], pointRadius: 0}"));
   client.println(F("      ]"));
   client.println(F("    },"));
   client.println(F("    options: {"));
