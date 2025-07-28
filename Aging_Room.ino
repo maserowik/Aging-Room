@@ -333,7 +333,7 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("System Getting Ready");
-  lcd.setCursor(0, 1);
+  lcd.setCursor(0, 2);
   lcd.print("Standby");
   delay(10000);
   lcd.clear();
@@ -419,7 +419,6 @@ void serveFile(EthernetClient &client, const char *filename, const char *content
     client.println("File not found");
   }
 }
-
 void serveRootPage(EthernetClient &client) {
   String lastUpdate = getDateString() + " " + getTimeString();
 
@@ -429,7 +428,8 @@ void serveRootPage(EthernetClient &client) {
   client.println();
 
   client.println(F("<!DOCTYPE html><html><head><meta charset='UTF-8'>"));
-  client.println(F("<meta http-equiv='refresh' content='300'>"));
+  // Removed meta refresh line here:
+  // client.println(F("<meta http-equiv='refresh' content='300'>"));
   client.println(F("<title>Seegrid Aging Room Data</title>"));
   client.println(F("<style>"));
   client.println(F("body{font-family:sans-serif;background:#f4f4f4;padding:20px;}"));
@@ -444,10 +444,10 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("</head><body>"));
 
   client.println(F("<h2>Seegrid Aging Room Data</h2>"));
-  client.print(F("<p>Last update: "));
+  // Modified last update with a span and id for JS update:
+  client.print(F("<p>Last update: <span id='lastUpdate'>"));
   client.print(lastUpdate);
-  client.println(F("</p>"));
-
+  client.println(F("</span></p>"));
 
   // Tabs
   client.println(F("<div>"));
@@ -462,9 +462,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("<button onclick=\"window.location='/temp.csv'\">Download Temperature CSV</button>"));
   client.println(F("<button onclick='confirmDelete(\"temp\")'>Delete Temperature CSV</button>"));
   client.println(F("<button onclick='updateCharts()'>Update Now</button>"));
-  client.println(F("<br><div style='max-width:1100px; height:700px;'><canvas id='tempChart'></canvas></div></div>"));
-
-
+  client.println(F("<br><div style='max-width:1000px; height:600px;'><canvas id='tempChart'></canvas></div></div>"));
 
   // Humidity Tab Content
   client.println(F("<div id='humid' class='tab-content'>"));
@@ -473,8 +471,7 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("<button onclick=\"window.location='/humid.csv'\">Download Humidity CSV</button>"));
   client.println(F("<button onclick='confirmDelete(\"humid\")'>Delete Humidity CSV</button>"));
   client.println(F("<button onclick='updateCharts()'>Update Now</button>"));
-  client.println(F("<br><div style='max-width:1100px; height:700px;'><canvas id='humidChart'></canvas></div></div>"));
-
+  client.println(F("<br><div style='max-width:1000px; height:600px;'><canvas id='humidChart'></canvas></div></div>"));
 
   // Scripts
   client.println(F("<script>"));
@@ -523,7 +520,6 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("  });"));
   client.println(F("  return {labels, sensorsA, sensorsB, sensorsC, sensorsD};"));
   client.println(F("}"));
-
 
   // Update charts based on selected ranges
   client.print(F("const threshold = "));
@@ -580,16 +576,30 @@ void serveRootPage(EthernetClient &client) {
   client.println(F("    }"));
   client.println(F("  });"));
 
+  // Add updating of last update time here:
+  client.println(F("  updateLastUpdate();"));
+
   client.println(F("}"));
 
+  // Event listeners for range selectors
   client.println(F("document.getElementById('tempRange').addEventListener('change', updateCharts);"));
   client.println(F("document.getElementById('humidRange').addEventListener('change', updateCharts);"));
 
+  // Periodic update every 5 minutes + initial update
   client.println(F("setInterval(updateCharts, 300000);"));
   client.println(F("updateCharts();"));
 
+  // Add the last update timestamp function
+  client.println(F("function updateLastUpdate() {"));
+  client.println(F("  const now = new Date();"));
+  client.println(F("  const formatted = now.toLocaleString();"));
+  client.println(F("  document.getElementById('lastUpdate').textContent = formatted;"));
+  client.println(F("}"));
+
   client.println(F("</script></body></html>"));
 }
+
+
 
 
 void loop() {
