@@ -356,14 +356,23 @@ void setup() {
 
   Serial.println("Starting Ethernet with DHCP...");
   if (Ethernet.begin(mac) == 0) {
-    Serial.println("DHCP failed");
-    while (true)
-      ;
+    Serial.println("DHCP failed. Trying static IP...");
+
+    IPAddress ip(192, 168, 55, 30);
+    IPAddress gateway(192, 168, 55, 1);
+    IPAddress subnet(255, 255, 255, 0);
+    IPAddress dns(192, 168, 55, 1);
+
+    Ethernet.begin(mac, ip, dns, gateway, subnet);
+    Serial.println("Static IP assigned.");
+  } else {
+    Serial.println("DHCP successful.");
   }
 
   delay(1000);
   Serial.print("Ethernet IP: ");
   Serial.println(Ethernet.localIP());
+
 
   Udp.begin(localPort);
   requestNtpTime();
