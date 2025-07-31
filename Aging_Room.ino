@@ -136,6 +136,7 @@ bool isDST(int year, int month, int day, int weekday) {
 
 void requestNtpTime() {
   IPAddress ntpIP(129, 6, 15, 28);
+  //IPAddress ntpIP(192, 168, 55, 60);
   Serial.println("Sending NTP request...");
   sendNTPpacket(ntpIP);
 
@@ -358,10 +359,10 @@ void setup() {
   if (Ethernet.begin(mac) == 0) {
     Serial.println("DHCP failed. Trying static IP...");
 
-    IPAddress ip(192, 168, 55, 30);
-    IPAddress gateway(192, 168, 55, 1);
+    IPAddress ip(192, 168, 16, 70);
+    IPAddress gateway(192, 168, 16, 1);
     IPAddress subnet(255, 255, 255, 0);
-    IPAddress dns(192, 168, 55, 1);
+    IPAddress dns(192, 168, 16, 1);
 
     Ethernet.begin(mac, ip, dns, gateway, subnet);
     Serial.println("Static IP assigned.");
@@ -372,7 +373,14 @@ void setup() {
   delay(1000);
   Serial.print("Ethernet IP: ");
   Serial.println(Ethernet.localIP());
+  lcd.clear(); 
 
+  lcd.setCursor(0, 0);
+  lcd.print("Ethernet IP: ");
+  lcd.setCursor(0, 2);
+  lcd.print(Ethernet.localIP());
+  delay(10000);
+  lcd.clear();
 
   Udp.begin(localPort);
   requestNtpTime();
